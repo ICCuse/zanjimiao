@@ -1,0 +1,72 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/config/config",
+    "pages/profile/profile",
+    "pages/components/cpu"
+  ],
+  "subpackages": [
+    {
+      "root": "packageDetail",
+      "pages": [
+        "pages/detail/detail"
+      ]
+    },
+    {
+      "root": "packageAdmin",
+      "pages": [
+        "pages/admin/admin",
+        "pages/admin/dataImport",
+        "pages/getApiUrl/getApiUrl"
+      ]
+    },
+    {
+      "root": "packagePlans",
+      "pages": [
+        "pages/plans/plans"
+      ]
+    },
+    {
+      "root": "packageImage",
+      "pages": [
+        "pages/index/index"
+      ]
+    }
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#1a1a1a",
+    "navigationBarTitleText": "台式电脑配置助手",
+    "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "custom": false,
+    "color": "#8a8a8a",
+    "selectedColor": "#ff8c00",
+    "backgroundColor": "#222222",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "static/images/tabs/tab-home.png",
+        "selectedIconPath": "static/images/tabs/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/config/config",
+        "text": "配置",
+        "iconPath": "static/images/tabs/tab-config.png",
+        "selectedIconPath": "static/images/tabs/tab-config-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "static/images/tabs/tab-profile.png",
+        "selectedIconPath": "static/images/tabs/tab-profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+} 

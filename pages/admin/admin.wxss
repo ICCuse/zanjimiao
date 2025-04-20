@@ -1,0 +1,219 @@
+/* pages/admin/admin.wxss */
+.container {
+  padding: 30rpx;
+}
+
+.header {
+  margin-bottom: 30rpx;
+}
+
+.title {
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 30rpx;
+  background-color: #f5f5f5;
+  border-radius: 10rpx;
+  padding: 10rpx;
+}
+
+.tab {
+  padding: 15rpx 25rpx;
+  font-size: 28rpx;
+  border-radius: 8rpx;
+  margin: 5rpx;
+  background-color: white;
+  color: #333;
+}
+
+.tab.active {
+  background-color: #1aad19;
+  color: white;
+}
+
+/* 数据导入区域样式 */
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin: 30rpx 0 20rpx 0;
+}
+
+.import-area {
+  background-color: white;
+  border-radius: 10rpx;
+  padding: 20rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.input-group, .text-area-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 28rpx;
+  margin-bottom: 10rpx;
+}
+
+.input-field {
+  padding: 15rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
+}
+
+.json-textarea {
+  padding: 15rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
+  height: 300rpx;
+}
+
+.import-example {
+  background-color: #f8f8f8;
+  padding: 15rpx;
+  border-radius: 8rpx;
+  margin-top: 10rpx;
+}
+
+.example-title {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.example-code {
+  font-size: 24rpx;
+  color: #333;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.import-btn {
+  background-color: #1aad19;
+  color: white;
+  font-size: 28rpx;
+  margin-top: 20rpx;
+}
+
+.action-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 30rpx;
+}
+
+.btn {
+  background-color: #1aad19;
+  color: white;
+  font-size: 28rpx;
+  padding: 10rpx 30rpx;
+  border-radius: 10rpx;
+  line-height: 1.5;
+}
+
+.mini-btn {
+  font-size: 24rpx;
+  padding: 8rpx 20rpx;
+  line-height: 1.2;
+}
+
+.component-list {
+  background-color: white;
+  border-radius: 10rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+  margin-bottom: 30rpx;
+}
+
+.component-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.component-item:last-child {
+  border-bottom: none;
+}
+
+.component-info {
+  flex: 1;
+}
+
+.component-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 15rpx;
+}
+
+.component-price {
+  font-size: 30rpx;
+  color: #f50;
+  margin-bottom: 10rpx;
+}
+
+.component-sku {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.update-time {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 10rpx;
+}
+
+.component-actions {
+  display: flex;
+  align-items: center;
+}
+
+.loading, .empty-tip {
+  text-align: center;
+  padding: 50rpx;
+  color: #999;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20rpx 0;
+}
+
+.page-btn {
+  min-width: 160rpx;
+  font-size: 26rpx;
+  margin: 0 10rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  background-color: #1aad19;
+  color: white;
+}
+
+.page-btn[disabled] {
+  background-color: #cccccc;
+  color: #999;
+}
+
+.page-info {
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #666;
+} 

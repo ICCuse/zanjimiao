@@ -1,0 +1,143 @@
+<!-- pages/admin/admin.wxml -->
+<view class="container">
+  <view class="header">
+    <view class="title">组件管理</view>
+    <view class="subtitle">管理组件价格和SKU</view>
+  </view>
+
+  <!-- 添加新的导入入口 -->
+  <view class="action-bar">
+    <button class="btn primary" bindtap="goToImportPage">高级数据导入</button>
+    <button class="btn" bindtap="triggerPriceUpdate">更新价格</button>
+  </view>
+
+  <!-- 分类选择器 -->
+  <view class="category-tabs">
+    <view class="tab {{selectedCategory === 'all' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="all">全部</view>
+    <view class="tab {{selectedCategory === 'cpu' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="cpu">CPU</view>
+    <view class="tab {{selectedCategory === 'gpu' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="gpu">显卡</view>
+    <view class="tab {{selectedCategory === 'motherboard' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="motherboard">主板</view>
+    <view class="tab {{selectedCategory === 'memory' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="memory">内存</view>
+    <view class="tab {{selectedCategory === 'storage' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="storage">存储</view>
+    <view class="tab {{selectedCategory === 'case' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="case">机箱</view>
+    <view class="tab {{selectedCategory === 'cooling' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="cooling">散热器</view>
+    <view class="tab {{selectedCategory === 'power' ? 'active' : ''}}" 
+          bindtap="changeCategory" 
+          data-category="power">电源</view>
+  </view>
+
+  <!-- 数据导入部分 -->
+  <view class="section-title">数据导入</view>
+  <view class="import-area">
+    <view class="import-form">
+      <view class="input-group">
+        <view class="label">集合名称:</view>
+        <input class="input-field" placeholder="例如：components" bindinput="onCollectionNameInput" value="{{collectionName}}"/>
+      </view>
+      <view class="text-area-group">
+        <view class="label">JSON数据:</view>
+        <textarea class="json-textarea" placeholder="粘贴JSON数据..." bindinput="onJsonDataInput" value="{{jsonData}}"></textarea>
+      </view>
+      <view class="import-example">
+        <view class="example-title">示例CPU数据格式:</view>
+        <text class="example-code">[
+  {
+    "name": "英特尔 酷睿 i5-12400F",
+    "category": "cpu",
+    "price": 999,
+    "brand": "英特尔",
+    "cores": 6,
+    "threads": 12,
+    "socket": "LGA1700",
+    "baseClock": 2.5,
+    "tdp": 65
+  }
+]</text>
+      </view>
+      <button class="import-btn" bindtap="importData">导入数据</button>
+    </view>
+  </view>
+
+  <!-- 批量SKU关联部分 -->
+  <view class="section-title">批量关联SKU</view>
+  <view class="import-area">
+    <view class="import-form">
+      <view class="text-area-group">
+        <view class="label">SKU映射数据 (JSON格式):</view>
+        <textarea class="json-textarea" placeholder="粘贴SKU映射数据..." bindinput="onSkuMappingInput" value="{{skuMapping}}"></textarea>
+      </view>
+      <view class="import-example">
+        <view class="example-title">示例SKU映射格式:</view>
+        <text class="example-code">[
+  {
+    "name": "英特尔 酷睿 i5-12400F",
+    "skuId": "100016034372"
+  },
+  {
+    "name": "华硕 TUF GAMING B660M-PLUS",
+    "skuId": "100027465981"
+  }
+]</text>
+      </view>
+      <button class="import-btn" bindtap="batchAssociateSKU">批量关联SKU</button>
+    </view>
+  </view>
+
+  <!-- 组件列表 -->
+  <view class="component-list">
+    <view wx:if="{{loading}}" class="loading">加载中...</view>
+    <view wx:elif="{{components.length === 0}}" class="empty-tip">
+      没有找到组件数据
+    </view>
+    <block wx:else>
+      <view class="component-item" wx:for="{{components}}" wx:key="_id">
+        <view class="component-info">
+          <view class="component-name">{{item.name}}</view>
+          <view class="component-price">
+            价格: ¥{{item.price || '暂无价格'}}
+            <text wx:if="{{item.lastPriceUpdate}}" class="update-time">
+              ({{formatDate(item.lastPriceUpdate)}}更新)
+            </text>
+          </view>
+          <view class="component-sku" wx:if="{{item.skuId}}">
+            SKU: {{item.skuId}}
+          </view>
+          <view class="component-sku" wx:else>
+            尚未关联SKU
+          </view>
+        </view>
+        <view class="component-actions">
+          <button class="btn mini-btn" 
+                  bindtap="associateJDSku" 
+                  data-id="{{item._id}}" 
+                  data-name="{{item.name}}">
+            {{item.skuId ? '修改SKU' : '关联SKU'}}
+          </button>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 分页控制 -->
+  <view class="pagination" wx:if="{{!loading && components.length > 0}}">
+    <button class="page-btn" disabled="{{currentPage <= 1}}" bindtap="prevPage">上一页</button>
+    <text class="page-info">{{currentPage}}/{{totalPages}}</text>
+    <button class="page-btn" disabled="{{currentPage >= totalPages}}" bindtap="nextPage">下一页</button>
+  </view>
+</view> 

@@ -1,0 +1,198 @@
+<!--pages/detail/detail.wxml-->
+<view class="container" wx:if="{{configData}}">
+  <!-- 页面头部 -->
+  <view class="header">
+    <view class="title-section">
+      <view class="main-title">{{configData.name}}</view>
+      <view class="sub-title">{{configData.desc}}</view>
+    </view>
+  </view>
+
+  <!-- 配置概览 -->
+  <view class="overview-card">
+    <!-- 价格和收藏按钮并排显示 -->
+    <view class="price-favorite-row">
+      <view class="price-section">
+        <view class="price-label">总价</view>
+        <view class="price-value">¥{{totalPrice}}</view>
+      </view>
+      
+      <!-- 收藏按钮放在价格旁边 -->
+      <view class="favorite-btn {{isFavorite ? 'active' : ''}}" bindtap="toggleFavorite">
+        <text class="favorite-icon">{{isFavorite ? '❤️' : '♡'}}</text>
+        <text class="favorite-text">{{isFavorite ? '已收藏' : '收藏'}}</text>
+      </view>
+      
+      <!-- 添加分享按钮 -->
+      <view class="share-btn" bindtap="showSharePanel">
+        <text class="share-icon">📤</text>
+        <text class="share-text">分享</text>
+      </view>
+    </view>
+    
+    <!-- 编辑按钮 -->
+    <view class="edit-btn" bindtap="editConfig">
+      <text class="btn-text">编辑此配置</text>
+    </view>
+  </view>
+
+  <!-- 配件清单 -->
+  <view class="parts-list">
+    <view class="section-title">配件清单</view>
+    
+    <!-- CPU -->
+    <view class="component-item" wx:if="{{configData.components.cpu}}">
+      <view class="component-icon">
+        <text class="icon-text">📊</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">处理器 (CPU)</view>
+        <view class="component-spec">{{configData.components.cpu.name}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.cpu.price}}</view>
+    </view>
+    
+    <!-- 主板 -->
+    <view class="component-item" wx:if="{{configData.components.motherboard}}">
+      <view class="component-icon">
+        <text class="icon-text">💻</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">主板</view>
+        <view class="component-spec">{{configData.components.motherboard.name}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.motherboard.price}}</view>
+    </view>
+    
+    <!-- 内存 -->
+    <view class="component-item" wx:if="{{configData.components.ram}}">
+      <view class="component-icon">
+        <text class="icon-text">🔢</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">内存 (RAM)</view>
+        <view class="component-spec">{{configData.components.ram.name}} {{configData.components.ram.quantity > 1 ? ' × ' + configData.components.ram.quantity : ''}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.ram.price * (configData.components.ram.quantity || 1)}}</view>
+    </view>
+    
+    <!-- 显卡 -->
+    <view class="component-item" wx:if="{{configData.components.gpu}}">
+      <view class="component-icon">
+        <text class="icon-text">🎮</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">显卡 (GPU)</view>
+        <view class="component-spec">{{configData.components.gpu.name}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.gpu.price}}</view>
+    </view>
+    
+    <!-- 存储 -->
+    <view class="component-item" wx:if="{{configData.components.storage}}">
+      <view class="component-icon">
+        <text class="icon-text">💾</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">存储</view>
+        <view class="component-spec">{{configData.components.storage.name}} {{configData.components.storage.quantity > 1 ? ' × ' + configData.components.storage.quantity : ''}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.storage.price * (configData.components.storage.quantity || 1)}}</view>
+    </view>
+    
+    <!-- 散热器 -->
+    <view class="component-item" wx:if="{{configData.components.cooler}}">
+      <view class="component-icon">
+        <text class="icon-text">❄️</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">散热器</view>
+        <view class="component-spec">{{configData.components.cooler.name}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.cooler.price}}</view>
+    </view>
+    
+    <!-- 电源 -->
+    <view class="component-item" wx:if="{{configData.components.psu}}">
+      <view class="component-icon">
+        <text class="icon-text">⚡</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">电源</view>
+        <view class="component-spec">{{configData.components.psu.name}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.psu.price}}</view>
+    </view>
+    
+    <!-- 机箱 -->
+    <view class="component-item" wx:if="{{configData.components.case}}">
+      <view class="component-icon">
+        <text class="icon-text">🖥️</text>
+      </view>
+      <view class="component-details">
+        <view class="component-name">机箱</view>
+        <view class="component-spec">{{configData.components.case.name}}</view>
+      </view>
+      <view class="component-price">¥{{configData.components.case.price}}</view>
+    </view>
+  </view>
+
+  <!-- 配置描述 -->
+  <view class="description-section" wx:if="{{configData.description}}">
+    <view class="section-title">配置描述</view>
+    <view class="description-content">{{configData.description}}</view>
+  </view>
+
+  <!-- 创建时间 -->
+  <view class="creation-info">
+    <text>查看次数: {{configData.views || 0}}</text>
+    <text>创建时间: {{configData.createTime ? formatTime(configData.createTime) : ''}}</text>
+  </view>
+
+  <!-- 底部按钮 - 增加分享按钮 -->
+  <view class="bottom-actions">
+    <button class="bottom-btn primary" bindtap="goToEdit">编辑此配置</button>
+    <button class="bottom-btn share" bindtap="showSharePanel">分享配置</button>
+  </view>
+  
+  <!-- 添加分享面板 -->
+  <view class="share-panel-mask" wx:if="{{shareVisible}}" bindtap="hideSharePanel">
+    <view class="share-panel" catchtap="preventBubble">
+      <view class="share-panel-title">分享此配置</view>
+      <view class="share-options">
+        <view class="share-option" wx:for="{{shareOptions}}" wx:key="id" bindtap="handleShare" data-type="{{item.id}}">
+          <image class="share-option-icon" src="{{item.icon}}" mode="aspectFit"></image>
+          <view class="share-option-name">{{item.name}}</view>
+        </view>
+      </view>
+      <view class="share-panel-close" bindtap="hideSharePanel">取消</view>
+    </view>
+  </view>
+</view>
+
+<!-- 没有数据时的错误提示 -->
+<view class="error-container" wx:else>
+  <image class="error-image" src="/static/images/not-found.png"></image>
+  <view class="error-text">未找到配置方案数据</view>
+  <button class="return-btn" bindtap="navToHome">返回首页</button>
+</view>
+
+<!-- wxs辅助函数 -->
+<wxs module="formatTime">
+  function format(timestamp) {
+    if (!timestamp) return '';
+    
+    var date = getDate(timestamp);
+    
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    
+    var monthStr = month < 10 ? '0' + month : month;
+    var dayStr = day < 10 ? '0' + day : day;
+    
+    return year + '-' + monthStr + '-' + dayStr;
+  }
+  
+  module.exports = format;
+</wxs> 

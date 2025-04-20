@@ -1,0 +1,209 @@
+<!--pages/profile/profile.wxml-->
+<view class="container">
+  <!-- 用户信息区域 -->
+  <view class="user-info-section">
+    <view class="user-info-card card">
+      <block wx:if="{{!hasUserInfo}}">
+        <view class="unlogin-box flex-column align-center justify-center">
+          <view class="avatar-placeholder"></view>
+          <view class="login-tips">登录查看个人数据</view>
+          <button class="btn btn-primary" bindtap="getUserProfile" wx:if="{{canIUseGetUserProfile}}">立即登录</button>
+        </view>
+      </block>
+      <block wx:else>
+        <view class="user-info-box flex-row">
+          <view class="avatar-box">
+            <image class="user-avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+          </view>
+          <view class="user-detail flex-column justify-center">
+            <view class="user-name">{{userInfo.nickName}}</view>
+            <view class="user-meta flex-row">
+              <view class="user-meta-item">
+                <text class="meta-count">{{favoriteCount}}</text>
+                <text class="meta-label">收藏</text>
+              </view>
+              <view class="user-meta-item">
+                <text class="meta-count">{{historyCount}}</text>
+                <text class="meta-label">浏览</text>
+              </view>
+              <view class="user-meta-item">
+                <text class="meta-count">{{userConfigs.length}}</text>
+                <text class="meta-label">配置</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 标签页导航 -->
+  <view class="tab-nav card">
+    <view class="tab-list flex-row">
+      <block wx:for="{{tabs}}" wx:key="id">
+        <view class="tab-item {{activeTab === item.id ? 'active' : ''}}" bindtap="switchTab" data-tab="{{item.id}}">
+          <text class="tab-text">{{item.name}}</text>
+          <view class="tab-line" wx:if="{{activeTab === item.id}}"></view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 收藏内容 -->
+  <view class="tab-content" wx:if="{{activeTab === 'favorite'}}">
+    <block wx:if="{{favoriteList.length > 0}}">
+      <view class="plan-list">
+        <block wx:for="{{favoriteList}}" wx:key="id">
+          <view class="plan-item card flex-row justify-between align-center">
+            <view class="plan-info" bindtap="navToDetail" data-id="{{item.id}}">
+              <view class="plan-name">{{item.name}}</view>
+              <view class="plan-desc text-caption">{{item.desc}}</view>
+              <view class="plan-meta flex-row justify-between">
+                <view class="price-performance">
+                  <text class="text-price">¥{{item.totalPrice}}</text>
+                  <view class="performance-box" wx:if="{{item.performance}}">
+                    <view class="performance-bar">
+                      <view class="performance-fill" style="width: {{item.performance.overall * 10}}%;"></view>
+                    </view>
+                    <text class="performance-text">性能得分: {{item.performance.overall}}</text>
+                  </view>
+                </view>
+                <view class="text-caption">{{item.date}}</view>
+              </view>
+            </view>
+            <view class="remove-btn" catchtap="removeFavorite" data-id="{{item.id}}">
+              <text class="remove-icon">×</text>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="empty-state flex-column align-center justify-center">
+        <view class="empty-icon">📦</view>
+        <view class="empty-text">暂无收藏</view>
+        <view class="empty-tips">将配置方案添加到收藏，下次查看更方便</view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 浏览历史内容 -->
+  <view class="tab-content" wx:if="{{activeTab === 'history'}}">
+    <block wx:if="{{historyList.length > 0}}">
+      <view class="history-header flex-row justify-between">
+        <view class="section-title">最近浏览</view>
+        <view class="clear-btn" bindtap="clearHistory">清空</view>
+      </view>
+      <view class="plan-list">
+        <block wx:for="{{historyList}}" wx:key="id">
+          <view class="plan-item card" bindtap="navToDetail" data-id="{{item.id}}">
+            <view class="plan-name">{{item.name}}</view>
+            <view class="plan-desc text-caption">{{item.desc}}</view>
+            <view class="plan-meta flex-row justify-between">
+              <view class="price-performance">
+                <text class="text-price">¥{{item.totalPrice}}</text>
+                <view class="performance-box" wx:if="{{item.performance}}">
+                  <view class="performance-bar">
+                    <view class="performance-fill" style="width: {{item.performance.overall * 10}}%;"></view>
+                  </view>
+                  <text class="performance-text">性能得分: {{item.performance.overall}}</text>
+                </view>
+              </view>
+              <view class="text-caption">{{item.date}}</view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="empty-state flex-column align-center justify-center">
+        <view class="empty-icon">🕒</view>
+        <view class="empty-text">暂无浏览记录</view>
+        <view class="empty-tips">浏览配置方案后，这里会记录您的浏览历史</view>
+      </view>
+    </block>
+  </view>
+  
+  <!-- 我的配置内容 -->
+  <view class="tab-content" wx:if="{{activeTab === 'configs'}}">
+    <block wx:if="{{userConfigs.length > 0}}">
+      <view class="configs-header flex-row justify-between">
+        <view class="section-title">我的配置方案</view>
+        <view class="create-btn" bindtap="createNewConfig">新建</view>
+      </view>
+      <view class="plan-list">
+        <block wx:for="{{userConfigs}}" wx:key="id">
+          <view class="plan-item card">
+            <view class="plan-info" bindtap="navToDetail" data-id="{{item.id}}">
+              <view class="plan-name">{{item.name}}</view>
+              <view class="plan-desc text-caption">{{item.desc}}</view>
+              <view class="plan-meta flex-row justify-between">
+                <view class="price-performance">
+                  <text class="text-price">¥{{item.totalPrice}}</text>
+                  <view class="performance-box" wx:if="{{item.performance}}">
+                    <view class="performance-bar">
+                      <view class="performance-fill" style="width: {{item.performance.overall * 10}}%;"></view>
+                    </view>
+                    <text class="performance-text">性能得分: {{item.performance.overall}}</text>
+                  </view>
+                </view>
+                <view class="text-caption">{{item.date}}</view>
+              </view>
+            </view>
+            <view class="action-buttons flex-row">
+              <view class="action-btn edit-btn" catchtap="editConfig" data-id="{{item.id}}">编辑</view>
+              <view class="action-btn delete-btn" catchtap="deleteConfig" data-id="{{item.id}}">删除</view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="empty-state flex-column align-center justify-center">
+        <view class="empty-icon">🖥️</view>
+        <view class="empty-text">暂无配置方案</view>
+        <view class="empty-tips">创建您的第一个DIY电脑配置方案</view>
+        <view class="create-config-btn" bindtap="createNewConfig">立即创建</view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 设置菜单 -->
+  <view class="settings-section card">
+    <view class="settings-title">设置</view>
+    <view class="settings-list">
+      <view class="settings-item flex-row justify-between align-center" bindtap="contactService">
+        <view class="settings-item-name">联系客服</view>
+        <view class="arrow-icon">></view>
+      </view>
+      <view class="settings-item flex-row justify-between align-center" bindtap="navToAbout">
+        <view class="settings-item-name">关于我们</view>
+        <view class="arrow-icon">></view>
+      </view>
+      <view class="settings-item flex-row justify-between align-center" bindtap="initComponentsData">
+        <view class="settings-item-name">初始化组件数据</view>
+        <view class="arrow-icon">></view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- WXS 模块用于格式化日期 -->
+<wxs module="formatter">
+  function formatTime(timestamp) {
+    if (!timestamp) return '';
+    var date = getDate(timestamp);
+    var year = date.getFullYear();
+    var month = padZero(date.getMonth() + 1);
+    var day = padZero(date.getDate());
+    return year + '-' + month + '-' + day;
+  }
+  
+  function padZero(num) {
+    return num < 10 ? '0' + num : '' + num;
+  }
+  
+  module.exports = {
+    formatTime: formatTime
+  };
+</wxs> 

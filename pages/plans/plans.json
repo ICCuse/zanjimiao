@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "推荐配置方案",
+  "navigationBarBackgroundColor": "#1a1a1a",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "light",
+  "usingComponents": {}
+} 

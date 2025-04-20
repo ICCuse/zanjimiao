@@ -1,0 +1,378 @@
+<!--pages/config/config.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="page-title">配置您的电脑</view>
+    <view class="header-buttons">
+      <view class="preview-btn" bindtap="previewConfig">
+        <text class="preview-icon">👁️</text>
+        <text>预览</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 已选组件摘要 -->
+  <view class="selected-summary">
+    <view class="total-price">总价：¥{{totalPrice}}</view>
+    <view class="selected-chips">
+      <view class="chip {{selectedItems.cpu ? 'selected' : ''}}" bindtap="switchComponent" data-type="cpu">
+        CPU {{selectedItems.cpu ? '✓' : ''}}
+      </view>
+      <view class="chip {{selectedItems.motherboard ? 'selected' : ''}}" bindtap="switchComponent" data-type="motherboard">
+        主板 {{selectedItems.motherboard ? '✓' : ''}}
+      </view>
+      <view class="chip {{selectedItems.ram ? 'selected' : ''}}" bindtap="switchComponent" data-type="ram">
+        内存 {{selectedItems.ram ? (selectedItems.ram.quantity > 1 ? '✓×'+selectedItems.ram.quantity : '✓') : ''}}
+      </view>
+      <view class="chip {{selectedItems.gpu ? 'selected' : ''}}" bindtap="switchComponent" data-type="gpu">
+        显卡 {{selectedItems.gpu ? (selectedItems.gpu.quantity > 1 ? '✓×'+selectedItems.gpu.quantity : '✓') : ''}}
+      </view>
+      <view class="chip {{selectedItems.storage ? 'selected' : ''}}" bindtap="switchComponent" data-type="storage">
+        存储 {{selectedItems.storage ? (selectedItems.storage.quantity > 1 ? '✓×'+selectedItems.storage.quantity : '✓') : ''}}
+      </view>
+      <view class="chip {{selectedItems.psu ? 'selected' : ''}}" bindtap="switchComponent" data-type="psu">
+        电源 {{selectedItems.psu ? '✓' : ''}}
+      </view>
+      <view class="chip {{selectedItems.case ? 'selected' : ''}}" bindtap="switchComponent" data-type="case">
+        机箱 {{selectedItems.case ? '✓' : ''}}
+      </view>
+      <view class="chip {{selectedItems.cooling ? 'selected' : ''}}" bindtap="switchComponent" data-type="cooling">
+        散热 {{selectedItems.cooling ? (selectedItems.cooling.quantity > 1 ? '✓×'+selectedItems.cooling.quantity : '✓') : ''}}
+      </view>
+      <view class="chip {{selectedItems.monitor ? 'selected' : ''}}" bindtap="switchComponent" data-type="monitor">
+        显示器 {{selectedItems.monitor ? (selectedItems.monitor.quantity > 1 ? '✓×'+selectedItems.monitor.quantity : '✓') : ''}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 配置主体部分 -->
+  <view class="config-container" style="height: 800px;">
+    <!-- 左侧配件列表 -->
+    <view class="component-nav">
+      <!-- 组件类型导航 -->
+      <scroll-view 
+        scroll-x="{{true}}" 
+        class="component-nav"
+        enhanced="{{true}}"
+        show-scrollbar="{{false}}">
+        <view 
+          class="component-nav-item {{currentComponent === 'cpu' ? 'active' : ''}}" 
+          data-component="cpu" 
+          bindtap="switchComponent">
+          <view class="component-icon">🔧</view>
+          <view class="component-label">CPU</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'motherboard' ? 'active' : ''}}" 
+          data-component="motherboard" 
+          bindtap="switchComponent">
+          <view class="component-icon">📟</view>
+          <view class="component-label">主板</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'ram' ? 'active' : ''}}" 
+          data-component="ram" 
+          bindtap="switchComponent">
+          <view class="component-icon">🔢</view>
+          <view class="component-label">内存</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'storage' ? 'active' : ''}}" 
+          data-component="storage" 
+          bindtap="switchComponent">
+          <view class="component-icon">💾</view>
+          <view class="component-label">存储</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'gpu' ? 'active' : ''}}" 
+          data-component="gpu" 
+          bindtap="switchComponent">
+          <view class="component-icon">🎮</view>
+          <view class="component-label">显卡</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'psu' ? 'active' : ''}}" 
+          data-component="psu" 
+          bindtap="switchComponent">
+          <view class="component-icon">⚡</view>
+          <view class="component-label">电源</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'case' ? 'active' : ''}}" 
+          data-component="case" 
+          bindtap="switchComponent">
+          <view class="component-icon">🖥️</view>
+          <view class="component-label">机箱</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'cooling' ? 'active' : ''}}" 
+          data-component="cooling" 
+          bindtap="switchComponent">
+          <view class="component-icon">❄️</view>
+          <view class="component-label">散热</view>
+        </view>
+        <view 
+          class="component-nav-item {{currentComponent === 'monitor' ? 'active' : ''}}" 
+          data-component="monitor" 
+          bindtap="switchComponent">
+          <view class="component-icon">🖥️</view>
+          <view class="component-label">显示器</view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 右侧筛选和组件列表 -->
+    <view class="component-selection">
+      <!-- 组件清单 -->
+      <view class="component-wrapper">
+        <view class="component-title">
+          <!-- 组件类型名称转换 -->
+          <view class="title">
+            {{currentComponent === 'cpu' ? 'CPU' : 
+              currentComponent === 'motherboard' ? '主板' :
+              currentComponent === 'ram' ? '内存' :
+              currentComponent === 'gpu' ? '显卡' :
+              currentComponent === 'storage' ? '存储' :
+              currentComponent === 'psu' ? '电源' :
+              currentComponent === 'case' ? '机箱' :
+              currentComponent === 'cooling' ? '散热' :
+              currentComponent === 'monitor' ? '显示器' : '组件'}}
+          </view>
+          <!-- 当前选中组件显示 -->
+          <view class="selected-item" wx:if="{{selectedItems[currentComponent]}}">
+            已选: 
+            <text class="selected-item-name">
+              {{selectedItems[currentComponent].name}}
+              <!-- 显示已选组件数量 -->
+              <block wx:if="{{['ram', 'gpu', 'storage', 'cooling'].indexOf(currentComponent) >= 0 && selectedItems[currentComponent].quantity > 1}}">
+                ×{{selectedItems[currentComponent].quantity}}
+              </block>
+            </text>
+          </view>
+          <view class="selected-item" wx:else>未选择</view>
+        </view>
+        
+        <!-- 筛选区 -->
+        <view class="filter-section">
+          <!-- 兼容性过滤开关 -->
+          <view class="filter-row compatibility-filter">
+            <view class="filter-label">兼容性过滤</view>
+            <view class="compatibility-switch">
+              <switch checked="{{onlyShowCompatible}}" bindchange="toggleCompatibilityFilter" color="#ff8c00" />
+              <text class="switch-label">{{onlyShowCompatible ? '仅显示兼容选项' : '显示所有选项'}}</text>
+            </view>
+          </view>
+          
+          <!-- 过滤统计信息 -->
+          <view class="filter-stats" wx:if="{{onlyShowCompatible && filteredComponentsCount > 0}}">
+            显示 {{filteredComponentsCount}} 个兼容的{{
+              currentComponent === 'cpu' ? 'CPU' : 
+              currentComponent === 'motherboard' ? '主板' :
+              currentComponent === 'ram' ? '内存' :
+              currentComponent === 'gpu' ? '显卡' :
+              currentComponent === 'storage' ? '存储设备' :
+              currentComponent === 'psu' ? '电源' :
+              currentComponent === 'case' ? '机箱' :
+              currentComponent === 'cooling' ? '散热器' :
+              currentComponent === 'monitor' ? '显示器' : '组件'
+            }}
+          </view>
+          
+          <!-- 品牌筛选区 -->
+          <view class="filter-row">
+            <view class="filter-header" bindtap="toggleBrandFold">
+              <view class="filter-label">品牌</view>
+              <view class="fold-icon">{{brandFolded ? '▼' : '▲'}}</view>
+            </view>
+            
+            <!-- 折叠区域 -->
+            <view class="brand-filter {{brandFolded && !showAllBrands ? 'folded' : ''}}">
+              <!-- 当前组件是CPU时特殊处理 -->
+              <block wx:if="{{currentComponent === 'cpu'}}">
+                <!-- 遍历品牌选项 -->
+                <block wx:for="{{brandOptions[currentComponent]}}" wx:key="index">
+                  <view class="brand-item {{currentBrand === item ? 'active' : ''}}" 
+                        bindtap="filterByBrand" data-brand="{{item}}">{{item}}</view>
+                </block>
+                
+                <!-- 确保至少有英特尔和AMD两个选项 -->
+                <block wx:if="{{!brandOptions[currentComponent] || brandOptions[currentComponent].length === 0}}">
+                  <view class="brand-item {{currentBrand === '英特尔' ? 'active' : ''}}" 
+                        bindtap="filterByBrand" data-brand="英特尔">英特尔</view>
+                  <view class="brand-item {{currentBrand === 'AMD' ? 'active' : ''}}" 
+                        bindtap="filterByBrand" data-brand="AMD">AMD</view>
+                </block>
+              </block>
+              
+              <!-- 其他组件类型正常显示品牌列表 -->
+              <block wx:else>
+                <view wx:for="{{brandOptions[currentComponent]}}" wx:key="index" 
+                      wx:if="{{index < initialBrandsCount || !brandFolded || showAllBrands}}"
+                      class="brand-item {{currentBrand === item ? 'active' : ''}}" 
+                      bindtap="filterByBrand" data-brand="{{item}}">{{item}}</view>
+                
+                <!-- 更多按钮 -->
+                <view wx:if="{{brandOptions[currentComponent].length > initialBrandsCount && brandFolded}}" 
+                      class="brand-more" catchtap="toggleShowAllBrands">
+                  {{showAllBrands ? '收起' : '更多'}}
+                </view>
+              </block>
+            </view>
+          </view>
+          
+          <view class="filter-row">
+            <view class="filter-label">价格</view>
+            <view class="price-filter">
+              <view class="price-item {{currentPrice === 'all' ? 'active' : ''}}" 
+                    bindtap="filterByPrice" data-price="all">全部</view>
+              <view class="price-item {{currentPrice === 'low' ? 'active' : ''}}" 
+                    bindtap="filterByPrice" data-price="low">低</view>
+              <view class="price-item {{currentPrice === 'medium' ? 'active' : ''}}" 
+                    bindtap="filterByPrice" data-price="medium">中</view>
+              <view class="price-item {{currentPrice === 'high' ? 'active' : ''}}" 
+                    bindtap="filterByPrice" data-price="high">高</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 组件列表 -->
+        <scroll-view 
+          scroll-y="{{true}}" 
+          class="component-list"
+          enable-flex="true"
+          enhanced="{{true}}"
+          show-scrollbar="{{true}}"
+          bounces="{{true}}"
+          scroll-anchoring="{{true}}">
+          <block wx:if="{{filteredComponents.length > 0}}">
+            <!-- 组件列表正常显示 -->
+            <block wx:for="{{filteredComponents}}" wx:key="id">
+              <view 
+                class="component-item {{selectedItems[currentComponent] && selectedItems[currentComponent].id === item.id ? 'active' : ''}}" 
+                catchtap="selectComponent"
+                data-id="{{item.id}}"
+                data-component="{{item.id}}"
+                data-type="{{currentComponent}}">
+                
+                <view class="component-item-header">
+                  <view class="component-brand">
+                    <image wx:if="{{item.brandLogo}}" src="{{item.brandLogo}}" mode="aspectFit"></image>
+                    <text wx:else>{{item.brand}}</text>
+                  </view>
+                  <view class="component-name">{{item.name}}</view>
+                </view>
+                <view class="component-item-body">
+                  <view class="component-specs">
+                    <!-- 优化CPU规格显示，特别处理中文类目数据 -->
+                    <block wx:if="{{currentComponent === 'cpu'}}">
+                      <view class="spec-item">
+                        <text class="spec-label">型号:</text>
+                        <text class="spec-value">{{item.name}}</text>
+                      </view>
+                      <view class="spec-item">
+                        <text class="spec-label">接口:</text>
+                        <text class="spec-value">{{item.socket || item['接口'] || '未知'}}</text>
+                      </view>
+                      <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index">
+                        <!-- 排除接口信息，避免重复显示 -->
+                        <block wx:if="{{spec.label !== '接口' && spec.label !== 'Socket' && spec.label !== 'CPU接口'}}">
+                          <view class="spec-item">
+                            <text class="spec-label">{{spec.label}}:</text>
+                            <text class="spec-value">{{spec.value}}</text>
+                          </view>
+                        </block>
+                      </block>
+                    </block>
+                    <!-- 其他组件的常规规格显示 -->
+                    <block wx:else>
+                      <!-- 显卡组件特殊处理，确保规格信息更全面 -->
+                      <block wx:if="{{currentComponent === 'gpu'}}">
+                        <view class="spec-item">
+                          <text class="spec-label">型号:</text>
+                          <text class="spec-value">{{item.name}}</text>
+                        </view>
+                        <view class="spec-item" wx:if="{{item.brand}}">
+                          <text class="spec-label">品牌:</text>
+                          <text class="spec-value">{{item.brand}}</text>
+                        </view>
+                        <!-- 显示所有规格，确保关键参数优先显示 -->
+                        <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index">
+                          <view class="spec-item">
+                            <text class="spec-label">{{spec.label}}:</text>
+                            <text class="spec-value">{{spec.value}}</text>
+                          </view>
+                        </block>
+                      </block>
+                      <!-- 其他组件的常规规格显示 -->
+                      <block wx:else>
+                        <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index">
+                          <view class="spec-item">
+                            <text class="spec-label">{{spec.label}}:</text>
+                            <text class="spec-value">{{spec.value}}</text>
+                          </view>
+                        </block>
+                      </block>
+                    </block>
+                  </view>
+                </view>
+                <view class="component-item-footer">
+                  <view class="component-price">¥{{item.price === '*' ? '市场价' : item.price}}
+                    <text wx:if="{{item.lastPriceUpdate}}" class="price-update-time">({{formatDate(item.lastPriceUpdate)}}更新)</text>
+                  </view>
+                  
+                  <!-- 选择按钮 - 优化条件判断 -->
+                  <block wx:if="{{selectedItems[currentComponent] && selectedItems[currentComponent].id === item.id}}">
+                    <!-- 检查是否是支持多选的组件类型 - 完全硬编码方式 -->
+                    <block wx:if="{{currentComponent == 'ram' || currentComponent == 'gpu' || currentComponent == 'storage' || currentComponent == 'cooling' || currentComponent == 'monitor'}}">
+                      <view class="select-btn active number-btn">
+                        <text class="quantity-label">数量:</text>
+                        <text class="quantity-value">{{selectedItems[currentComponent].quantity || 1}}</text>
+                        <view class="quantity-ctrl">
+                          <view class="minus" catchtap="decreaseQuantity" data-id="{{item.id}}">-</view>
+                          <view class="plus" catchtap="increaseQuantity" data-id="{{item.id}}">+</view>
+                        </view>
+                      </view>
+                    </block>
+                    <!-- 非多选组件显示已选 -->
+                    <block wx:else>
+                      <view class="select-btn active">已选</view>
+                    </block>
+                  </block>
+                  <!-- 未选状态显示选择按钮 -->
+                  <block wx:else>
+                    <view class="select-btn" catchtap="selectComponent" data-id="{{item.id}}" data-component="{{item.id}}" data-type="{{currentComponent}}">选择</view>
+                  </block>
+                </view>
+              </view>
+            </block>
+          </block>
+          <block wx:else>
+            <view class="empty-list">
+              <view class="empty-icon">🔍</view>
+              <view class="empty-text">没有找到符合条件的{{
+                currentComponent === 'cpu' ? '处理器' :
+                currentComponent === 'motherboard' ? '主板' :
+                currentComponent === 'ram' ? '内存' :
+                currentComponent === 'storage' ? '存储设备' :
+                currentComponent === 'gpu' ? '显卡' :
+                currentComponent === 'psu' ? '电源' :
+                currentComponent === 'case' ? '机箱' :
+                currentComponent === 'cooling' ? '散热器' :
+                currentComponent === 'monitor' ? '显示器' : ''
+              }}</view>
+              <view class="empty-subtext">请尝试更改筛选条件</view>
+            </view>
+          </block>
+          
+          <!-- 添加一个额外的底部间距，确保最后一项可以完全滚动到视图中 -->
+          <view style="height: 120rpx;"></view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="action-bar">
+    <button class="action-btn btn-secondary" bindtap="resetConfig">重置</button>
+    <button class="action-btn btn-primary" bindtap="saveConfig">保存配置</button>
+  </view>
+</view> 

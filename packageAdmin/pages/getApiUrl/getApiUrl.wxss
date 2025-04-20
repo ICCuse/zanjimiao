@@ -1,0 +1,54 @@
+.container {
+  padding: 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 40rpx;
+  color: #333;
+  text-align: center;
+}
+
+button {
+  margin: 30rpx 0;
+  width: 80%;
+}
+
+.result-container {
+  margin-top: 40rpx;
+  width: 100%;
+  background: #f5f5f5;
+  padding: 20rpx;
+  border-radius: 10rpx;
+}
+
+.result-title {
+  font-size: 30rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.result-url {
+  font-size: 28rpx;
+  word-break: break-all;
+  padding: 20rpx;
+  background: #fff;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid #e0e0e0;
+}
+
+.loading {
+  margin-top: 30rpx;
+  color: #666;
+}
+
+.error {
+  margin-top: 30rpx;
+  color: #f00;
+  text-align: center;
+} 

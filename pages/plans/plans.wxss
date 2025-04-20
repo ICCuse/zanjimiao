@@ -1,0 +1,426 @@
+/* pages/plans/plans.wxss */
+
+/* 容器 */
+.container {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 头部导航 */
+.header {
+  padding: 30rpx 30rpx 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.search-wrapper {
+  flex: 1;
+  margin-left: 20rpx;
+}
+
+.search-box {
+  background-color: #f5f5f5;
+  border-radius: 30rpx;
+  padding: 12rpx 20rpx;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  margin-right: 10rpx;
+  color: #666;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 筛选和排序栏 */
+.filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 30rpx;
+  margin-bottom: 10rpx;
+  position: relative;
+  background-color: white;
+  z-index: 10;
+}
+
+/* 排序选择器 */
+.sort-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sort-label {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.sort-icon {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 8rpx;
+}
+
+/* 排序下拉菜单 */
+.sort-dropdown {
+  position: absolute;
+  top: 60rpx;
+  left: 0;
+  width: 220rpx;
+  background-color: white;
+  border-radius: 12rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  overflow: hidden;
+  display: none;
+}
+
+.sort-dropdown.show {
+  display: block;
+}
+
+.sort-option {
+  padding: 20rpx 30rpx;
+  font-size: 28rpx;
+  color: #333;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.sort-option.active {
+  color: #ff6b00;
+  background-color: rgba(255, 107, 0, 0.05);
+}
+
+.sort-option:last-child {
+  border-bottom: none;
+}
+
+/* 筛选按钮 */
+.filter-btn {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.filter-icon {
+  margin-right: 8rpx;
+}
+
+/* 方案列表容器 */
+.plan-list-container {
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+/* 加载中 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 300rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #ff6b00;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 空状态 */
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 100rpx 30rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 30rpx;
+  color: #ccc;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  color: #999;
+  margin-bottom: 40rpx;
+}
+
+.empty-btn {
+  padding: 20rpx 40rpx;
+  background-color: #ff6b00;
+  color: white;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+}
+
+/* 方案列表 */
+.plan-list {
+  padding: 0 30rpx;
+}
+
+.plan-card {
+  background-color: white;
+  border-radius: 16rpx;
+  margin-bottom: 30rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.plan-info {
+  position: relative;
+}
+
+.plan-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.plan-desc {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.plan-price {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #ff6b00;
+  margin-bottom: 20rpx;
+}
+
+/* 性能评分 */
+.plan-performance {
+  display: flex;
+  margin-bottom: 30rpx;
+}
+
+.performance-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 30rpx;
+}
+
+.performance-item .score {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  color: white;
+  font-size: 26rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.performance-item .label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.performance-item.high .score {
+  background-color: #4caf50;
+}
+
+.performance-item.medium .score {
+  background-color: #ff9800;
+}
+
+.performance-item.low .score {
+  background-color: #f44336;
+}
+
+/* 配件标签 */
+.plan-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 20rpx;
+}
+
+.tag {
+  padding: 8rpx 20rpx;
+  border-radius: 30rpx;
+  font-size: 24rpx;
+  margin-right: 16rpx;
+  margin-bottom: 10rpx;
+  color: white;
+}
+
+.tag.cpu {
+  background-color: #2196f3;
+}
+
+.tag.gpu {
+  background-color: #4caf50;
+}
+
+.tag.ram {
+  background-color: #ff9800;
+}
+
+/* 浏览量 */
+.plan-views {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.view-icon {
+  margin-right: 6rpx;
+}
+
+/* 创建按钮 */
+.create-btn-wrapper {
+  padding: 30rpx;
+  position: sticky;
+  bottom: 30rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.create-btn {
+  background-color: #ff6b00;
+  color: white;
+  padding: 20rpx 60rpx;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  box-shadow: 0 6rpx 20rpx rgba(255, 107, 0, 0.3);
+}
+
+/* 筛选抽屉 */
+.filter-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: none;
+}
+
+.filter-drawer.show {
+  display: block;
+}
+
+.filter-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 40rpx 30rpx;
+  box-sizing: border-box;
+  transform: translateY(100%);
+  animation: slideUp 0.3s forwards;
+}
+
+@keyframes slideUp {
+  to { transform: translateY(0); }
+}
+
+.filter-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30rpx;
+  text-align: center;
+}
+
+.filter-section {
+  margin-bottom: 30rpx;
+}
+
+.filter-section-title {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -10rpx;
+}
+
+.filter-option {
+  width: calc(33.33% - 20rpx);
+  margin: 0 10rpx 20rpx;
+  padding: 20rpx 0;
+  text-align: center;
+  border-radius: 8rpx;
+  background-color: #f5f5f5;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.filter-option.active {
+  background-color: #ff6b00;
+  color: white;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40rpx;
+}
+
+.filter-btn {
+  width: 48%;
+  padding: 20rpx 0;
+  text-align: center;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+}
+
+.filter-btn.cancel {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.filter-btn.apply {
+  background-color: #ff6b00;
+  color: white;
+} 

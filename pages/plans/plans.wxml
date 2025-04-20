@@ -1,0 +1,142 @@
+<!--pages/plans/plans.wxml-->
+<view class="container">
+  <!-- 头部导航 -->
+  <view class="header">
+    <view class="page-title">配置方案</view>
+    
+    <!-- 搜索框(暂不实现) -->
+    <!--
+    <view class="search-wrapper">
+      <view class="search-box">
+        <text class="search-icon">🔍</text>
+        <input class="search-input" placeholder="搜索配置方案" confirm-type="search" />
+      </view>
+    </view>
+    -->
+  </view>
+
+  <!-- 筛选和排序栏 -->
+  <view class="filter-bar">
+    <!-- 排序选择器 -->
+    <view class="sort-selector" catchtap="toggleSort">
+      <text class="sort-label">{{currentSortName}}</text>
+      <text class="sort-icon">▼</text>
+      
+      <!-- 排序下拉菜单 -->
+      <view class="sort-dropdown {{showSort ? 'show' : ''}}">
+        <view 
+          wx:for="{{sortOptions}}" 
+          wx:key="id" 
+          class="sort-option {{selectedSort === item.id ? 'active' : ''}}"
+          data-sort="{{item.id}}"
+          catchtap="selectSort">
+          {{item.name}}
+        </view>
+      </view>
+    </view>
+    
+    <!-- 筛选按钮 -->
+    <view class="filter-btn" bindtap="toggleFilter">
+      <text class="filter-icon">🔍</text>
+      <text>筛选</text>
+    </view>
+  </view>
+
+  <!-- 方案列表 -->
+  <scroll-view 
+    scroll-y="{{true}}" 
+    class="plan-list-container" 
+    enhanced="{{true}}" 
+    show-scrollbar="{{false}}"
+    enable-flex="{{true}}">
+    
+    <!-- 加载中 -->
+    <view class="loading-container" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <view class="loading-text">加载中...</view>
+    </view>
+    
+    <!-- 无数据 -->
+    <view class="empty-container" wx:elif="{{planList.length === 0}}">
+      <view class="empty-icon">📋</view>
+      <view class="empty-text">暂无配置方案</view>
+      <view class="empty-btn" bindtap="navToConfig">创建我的配置</view>
+    </view>
+    
+    <!-- 方案列表 -->
+    <view class="plan-list" wx:else>
+      <block wx:for="{{planList}}" wx:key="id">
+        <view class="plan-card" bindtap="navToDetail" data-id="{{item.id}}">
+          <view class="plan-info">
+            <view class="plan-title">{{item.name}}</view>
+            <view class="plan-desc">{{item.desc}}</view>
+            <view class="plan-price">¥{{item.totalPrice}}</view>
+            
+            <!-- 性能评分 -->
+            <view class="plan-performance">
+              <view class="performance-item {{item.performance.overall >= 90 ? 'high' : item.performance.overall >= 70 ? 'medium' : 'low'}}">
+                <text class="score">{{item.performance.overall}}</text>
+                <text class="label">综合性能</text>
+              </view>
+              <view class="performance-item {{item.performance.gaming >= 90 ? 'high' : item.performance.gaming >= 70 ? 'medium' : 'low'}}">
+                <text class="score">{{item.performance.gaming}}</text>
+                <text class="label">游戏</text>
+              </view>
+              <view class="performance-item {{item.performance.work >= 90 ? 'high' : item.performance.work >= 70 ? 'medium' : 'low'}}">
+                <text class="score">{{item.performance.work}}</text>
+                <text class="label">工作</text>
+              </view>
+            </view>
+            
+            <!-- 配件标签 -->
+            <view class="plan-tags">
+              <view class="tag cpu">{{getCpuLabel(item)}}</view>
+              <view class="tag gpu">{{getGpuLabel(item)}}</view>
+              <view class="tag ram">{{getRamLabel(item)}}</view>
+            </view>
+            
+            <!-- 浏览量 -->
+            <view class="plan-views">
+              <text class="view-icon">👁️</text>
+              <text class="view-count">{{item.views || 0}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+    
+    <!-- 创建按钮 -->
+    <view class="create-btn-wrapper">
+      <button class="create-btn" bindtap="navToConfig">创建配置</button>
+    </view>
+  </scroll-view>
+  
+  <!-- 筛选抽屉 -->
+  <view class="filter-drawer {{isShowFilter ? 'show' : ''}}" catchtap="closeFilter">
+    <view class="filter-content" catchtap="stopPropagation">
+      <!-- 筛选标题 -->
+      <view class="filter-title">筛选方案</view>
+      
+      <!-- 分类筛选 -->
+      <view class="filter-section">
+        <view class="filter-section-title">使用场景</view>
+        <view class="filter-options">
+          <view 
+            wx:for="{{categoryOptions}}" 
+            wx:key="id" 
+            class="filter-option {{selectedCategory === item.id ? 'active' : ''}}"
+            data-category="{{item.id}}"
+            catchtap="selectCategory">
+            {{item.name}}
+          </view>
+        </view>
+      </view>
+      
+      <!-- 应用按钮 -->
+      <view class="filter-actions">
+        <button class="filter-btn cancel" catchtap="closeFilter">取消</button>
+        <button class="filter-btn apply" catchtap="closeFilter">应用</button>
+      </view>
+    </view>
+  </view>
+</view> 

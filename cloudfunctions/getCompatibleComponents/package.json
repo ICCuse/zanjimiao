@@ -1,0 +1,14 @@
+{
+  "name": "getCompatibleComponents",
+  "version": "1.0.0",
+  "description": "获取与已选组件兼容的硬件清单",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+} 

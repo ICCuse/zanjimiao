@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>配置 - 台式电脑配置生成助手</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="device-container">
+    <!-- iOS状态栏 -->
+    <div class="status-bar">
+      <div class="time">14:30</div>
+      <div class="icons">
+        <i class="fas fa-signal"></i>
+        <i class="fas fa-wifi"></i>
+        <i class="fas fa-battery-three-quarters"></i>
+      </div>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="app-container">
+      <!-- 页面标题 -->
+      <h2 style="margin: 10px 0 20px; font-size: 22px;">智能配置</h2>
+      
+      <!-- 预算选择 -->
+      <div class="card">
+        <div class="card-title">
+          <span>设置预算</span>
+          <span style="color: var(--primary-color); font-weight: 600;">¥8,800</span>
+        </div>
+        
+        <div class="range-slider">
+          <input type="range" min="3000" max="30000" value="8800" step="100">
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 13px; color: var(--text-gray);">
+          <span>¥3,000</span>
+          <span>¥30,000</span>
+        </div>
+      </div>
+      
+      <!-- 用途选择 -->
+      <div class="card">
+        <div class="card-title">选择用途</div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px;">
+          <div style="padding: 15px; border: 2px solid var(--primary-color); border-radius: 10px; text-align: center;">
+            <i class="fas fa-gamepad" style="font-size: 28px; color: var(--primary-color); margin-bottom: 8px;"></i>
+            <div style="font-weight: 600;">游戏娱乐</div>
+          </div>
+          
+          <div style="padding: 15px; border: 1px solid #333; border-radius: 10px; text-align: center;">
+            <i class="fas fa-briefcase" style="font-size: 28px; color: var(--text-gray); margin-bottom: 8px;"></i>
+            <div style="font-weight: 600; color: var(--text-gray);">办公商用</div>
+          </div>
+          
+          <div style="padding: 15px; border: 1px solid #333; border-radius: 10px; text-align: center;">
+            <i class="fas fa-photo-film" style="font-size: 28px; color: var(--text-gray); margin-bottom: 8px;"></i>
+            <div style="font-weight: 600; color: var(--text-gray);">设计创作</div>
+          </div>
+          
+          <div style="padding: 15px; border: 1px solid #333; border-radius: 10px; text-align: center;">
+            <i class="fas fa-code" style="font-size: 28px; color: var(--text-gray); margin-bottom: 8px;"></i>
+            <div style="font-weight: 600; color: var(--text-gray);">开发编程</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 性能偏好 -->
+      <div class="card">
+        <div class="card-title">性能偏好</div>
+        
+        <div class="form-control">
+          <label>游戏性能</label>
+          <select>
+            <option>入门级 (1080p 60FPS)</option>
+            <option selected>中端级 (1440p 60FPS)</option>
+            <option>高端级 (4K 60FPS)</option>
+            <option>发烧级 (4K 120FPS+)</option>
+          </select>
+        </div>
+        
+        <div class="form-control" style="margin-bottom: 0;">
+          <label>偏好品牌</label>
+          <div style="display: flex; gap: 10px; margin-top: 5px;">
+            <div style="flex: 1; padding: 10px; border: 2px solid var(--primary-color); border-radius: 8px; text-align: center;">
+              <i class="fab fa-nvidia" style="font-size: 20px; color: var(--primary-color);"></i>
+            </div>
+            <div style="flex: 1; padding: 10px; border: 1px solid #333; border-radius: 8px; text-align: center;">
+              <i class="fab fa-amd" style="font-size: 20px; color: var(--text-gray);"></i>
+            </div>
+            <div style="flex: 1; padding: 10px; border: 1px solid #333; border-radius: 8px; text-align: center;">
+              <i class="fab fa-intel" style="font-size: 20px; color: var(--text-gray);"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 生成按钮 -->
+      <button class="btn btn-primary" style="width: 100%; margin-top: 20px; padding: 15px;">
+        <i class="fas fa-wand-magic-sparkles"></i> 生成配置方案
+      </button>
+    </div>
+    
+    <!-- 底部导航栏 -->
+    <div class="tab-bar">
+      <div class="tab-item">
+        <i class="fas fa-home"></i>
+        <span>首页</span>
+      </div>
+      <div class="tab-item active">
+        <i class="fas fa-laptop"></i>
+        <span>配置</span>
+      </div>
+      <div class="tab-item">
+        <i class="fas fa-list-check"></i>
+        <span>方案</span>
+      </div>
+      <div class="tab-item">
+        <i class="fas fa-user"></i>
+        <span>我的</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

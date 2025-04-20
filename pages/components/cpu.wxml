@@ -1,0 +1,38 @@
+<!-- pages/components/cpu.wxml -->
+<view class="container">
+  <view class="header">
+    <text class="title">处理器列表</text>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-container" wx:if="{{isLoading}}">
+    <view class="loading"></view>
+    <text>正在加载数据...</text>
+  </view>
+
+  <!-- 错误提示 -->
+  <view class="error-container" wx:if="{{hasError}}">
+    <icon type="warn" size="50"></icon>
+    <text class="error-text">{{errorMsg}}</text>
+    <button bindtap="retryLoad" type="primary" size="mini">重试</button>
+  </view>
+
+  <!-- CPU列表 -->
+  <scroll-view scroll-y="true" class="cpu-list" wx:if="{{!isLoading && !hasError}}">
+    <block wx:for="{{cpuList}}" wx:key="id">
+      <view class="cpu-item">
+        <view class="cpu-info">
+          <view class="cpu-name">{{item.name}}</view>
+          <view class="cpu-brand">品牌: {{item.brand}}</view>
+          <view class="cpu-specs">
+            <text>接口: {{item.socket}}</text>
+            <text>核心/线程: {{item.core_count}}/{{item.thread_count}}</text>
+            <text>频率: {{item.base_frequency}} GHz</text>
+            <text>功耗: {{item.tdp}}</text>
+          </view>
+        </view>
+        <view class="cpu-price">¥ {{item.price}}</view>
+      </view>
+    </block>
+  </scroll-view>
+</view> 

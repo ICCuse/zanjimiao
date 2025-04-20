@@ -1,0 +1,288 @@
+/* pages/home/home.wxss */
+
+.container {
+  padding: 0 0 20rpx 0;
+  box-sizing: border-box;
+  background-color: var(--background-color);
+}
+
+.header {
+  padding: 20rpx 10rpx;
+  margin-bottom: 20rpx;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 30rpx;
+  padding: 10rpx 20rpx;
+  width: 320rpx;
+}
+
+.search-icon {
+  margin-right: 10rpx;
+}
+
+.search-placeholder {
+  color: var(--text-secondary);
+  font-size: 26rpx;
+}
+
+/* 轮播图样式 */
+.banner {
+  width: 100%;
+  height: 340rpx;
+}
+
+.banner image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 快速入口样式 */
+.quick-entry {
+  margin: 30rpx 20rpx;
+  padding: 30rpx;
+  background-color: var(--surface-color);
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
+}
+
+.entry-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 30rpx;
+  color: var(--text-primary);
+}
+
+.entry-list {
+  display: flex;
+  justify-content: space-between;
+}
+
+.entry-item {
+  width: 150rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.entry-item image {
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 15rpx;
+}
+
+.entry-item text {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+}
+
+/* 推荐配置样式 */
+.recommend {
+  margin: 0 20rpx 30rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.more {
+  font-size: 26rpx;
+  color: var(--primary-color);
+}
+
+.plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.plan-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 30rpx;
+  background-color: var(--surface-color);
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
+}
+
+.plan-info {
+  flex: 1;
+}
+
+.plan-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 10rpx;
+}
+
+.plan-desc {
+  font-size: 24rpx;
+  color: var(--text-hint);
+  margin-bottom: 20rpx;
+}
+
+.plan-price {
+  font-size: 32rpx;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.plan-logo {
+  width: 100rpx;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-logo image {
+  width: 80rpx;
+  height: 80rpx;
+}
+
+/* 热门CPU样式 */
+.hot-cpu {
+  margin: 0 20rpx 30rpx;
+}
+
+.cpu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.cpu-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  background-color: var(--surface-color);
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
+}
+
+.cpu-brand {
+  width: 80rpx;
+  height: 80rpx;
+  margin-right: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cpu-brand image {
+  width: 70rpx;
+  height: 70rpx;
+}
+
+.cpu-info {
+  flex: 1;
+}
+
+.cpu-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 10rpx;
+}
+
+.cpu-spec {
+  font-size: 24rpx;
+  color: var(--text-hint);
+  margin-bottom: 10rpx;
+}
+
+.cpu-price {
+  font-size: 30rpx;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* 快速操作区域 */
+.action-grid {
+  width: 100%;
+  padding: 10rpx 0;
+}
+
+.action-item {
+  width: 22%;
+  padding: 20rpx 0;
+}
+
+.action-icon {
+  font-size: 40rpx;
+  background-color: rgba(255, 140, 0, 0.1);
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.action-text {
+  font-size: 24rpx;
+}
+
+/* 分类导航 */
+.category-grid {
+  padding: 20rpx 0;
+}
+
+.category-item {
+  width: 25%;
+  margin-bottom: 20rpx;
+}
+
+.category-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10rpx;
+  overflow: hidden;
+}
+
+.category-icon image {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.category-name {
+  font-size: 24rpx;
+}
+
+/* 立即定制按钮 */
+.create-btn-container {
+  margin-top: 40rpx;
+  margin-bottom: 30rpx;
+  width: 100%;
+}
+
+.create-btn-container .btn {
+  width: 100%;
+  font-size: 32rpx;
+  font-weight: bold;
+  padding: 24rpx 0;
+} 

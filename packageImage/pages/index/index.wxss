@@ -1,0 +1,7 @@
+/* packageImage/pages/index/index.wxss */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+} 

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "openapi": [
+      "cloud.callFunction"
+    ]
+  },
+  "triggers": [
+    {
+      "name": "adminApiTrigger",
+      "type": "http",
+      "config": {
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "authRequired": false
+      }
+    }
+  ]
+} 

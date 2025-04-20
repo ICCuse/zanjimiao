@@ -1,0 +1,185 @@
+<!--pages/home/home.wxml-->
+<view class="container">
+  <!-- 页面头部 -->
+  <view class="header flex-row justify-between align-center">
+    <view class="page-title">台式电脑配置助手</view>
+    <view class="search-box" bindtap="navToSearch">
+      <text class="search-icon">🔍</text>
+      <text class="search-placeholder">搜索配置方案</text>
+    </view>
+  </view>
+
+  <!-- 轮播图 -->
+  <swiper class="banner" indicator-dots="{{true}}" autoplay="{{true}}" interval="3000" circular="{{true}}">
+    <swiper-item>
+      <image src="/static/images/banners/banner1.jpg" mode="aspectFill"></image>
+    </swiper-item>
+    <swiper-item>
+      <image src="/static/images/banners/banner2.jpg" mode="aspectFill"></image>
+    </swiper-item>
+    <swiper-item>
+      <image src="/static/images/banners/banner3.jpg" mode="aspectFill"></image>
+    </swiper-item>
+  </swiper>
+
+  <!-- 快速入口 -->
+  <view class="quick-entry">
+    <view class="entry-title">使用场景</view>
+    <view class="entry-list">
+      <navigator url="/pages/config/config?type=gaming" class="entry-item">
+        <image src="/static/images/categories/icon-gaming.png"></image>
+        <text>游戏</text>
+      </navigator>
+      <navigator url="/pages/config/config?type=work" class="entry-item">
+        <image src="/static/images/categories/icon-work.png"></image>
+        <text>工作</text>
+      </navigator>
+      <navigator url="/pages/config/config?type=office" class="entry-item">
+        <image src="/static/images/categories/icon-office.png"></image>
+        <text>办公</text>
+      </navigator>
+      <navigator url="/pages/config/config?type=accessories" class="entry-item">
+        <image src="/static/images/categories/icon-accessories.png"></image>
+        <text>配件</text>
+      </navigator>
+    </view>
+  </view>
+
+  <!-- 推荐配置 -->
+  <view class="recommend">
+    <view class="section-header">
+      <text class="section-title">推荐配置</text>
+      <view class="more" bindtap="navToPlans">查看更多</view>
+    </view>
+    <view class="plan-list">
+      <view class="plan-item" bindtap="navToDetail" data-id="preset_gaming_high">
+        <view class="plan-info">
+          <view class="plan-name">高端游戏主机</view>
+          <view class="plan-desc">适合3A游戏体验 | 高端性能</view>
+          <view class="plan-price">¥13,999</view>
+        </view>
+        <view class="plan-logo">
+          <image src="/static/images/brands/intel-logo.png" mode="aspectFit"></image>
+        </view>
+      </view>
+      <view class="plan-item" bindtap="navToDetail" data-id="preset_work_high">
+        <view class="plan-info">
+          <view class="plan-name">创作者工作站</view>
+          <view class="plan-desc">视频渲染和3D建模 | 专业性能</view>
+          <view class="plan-price">¥19,999</view>
+        </view>
+        <view class="plan-logo">
+          <image src="/static/images/brands/amd-logo.png" mode="aspectFit"></image>
+        </view>
+      </view>
+      <view class="plan-item" bindtap="navToDetail" data-id="preset_gaming_mid">
+        <view class="plan-info">
+          <view class="plan-name">中端游戏主机</view>
+          <view class="plan-desc">1440p游戏体验 | 中端性能</view>
+          <view class="plan-price">¥7,999</view>
+        </view>
+        <view class="plan-logo">
+          <image src="/static/images/brands/nvidia-logo.png" mode="aspectFit"></image>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 热门CPU -->
+  <view class="hot-cpu">
+    <view class="section-header">
+      <text class="section-title">热门CPU</text>
+      <view class="more" bindtap="navToConfig">定制配置</view>
+    </view>
+    <view class="cpu-list">
+      <view class="cpu-item">
+        <view class="cpu-brand">
+          <image src="/static/images/brands/intel-logo.png" mode="aspectFit"></image>
+        </view>
+        <view class="cpu-info">
+          <view class="cpu-name">Intel Core i7-13700K</view>
+          <view class="cpu-spec">16核24线程 | 5.4GHz</view>
+          <view class="cpu-price">¥2,899</view>
+        </view>
+      </view>
+      <view class="cpu-item">
+        <view class="cpu-brand">
+          <image src="/static/images/brands/amd-logo.png" mode="aspectFit"></image>
+        </view>
+        <view class="cpu-info">
+          <view class="cpu-name">AMD Ryzen 7 7800X3D</view>
+          <view class="cpu-spec">8核16线程 | 5.0GHz | 3D V-Cache</view>
+          <view class="cpu-price">¥2,799</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快速入口 -->
+  <view class="quick-actions card">
+    <view class="section-title">快速操作</view>
+    <view class="action-grid flex-row justify-between">
+      <view class="action-item flex-column align-center" bindtap="navToConfig">
+        <view class="action-icon create-icon">📝</view>
+        <view class="action-text">配置生成</view>
+      </view>
+      <view class="action-item flex-column align-center" bindtap="navToPlans">
+        <view class="action-icon plan-icon">📋</view>
+        <view class="action-text">方案浏览</view>
+      </view>
+      <view class="action-item flex-column align-center" bindtap="navToComparison">
+        <view class="action-icon compare-icon">⚖️</view>
+        <view class="action-text">配置对比</view>
+      </view>
+      <view class="action-item flex-column align-center" bindtap="navToPreference">
+        <view class="action-icon recommend-icon">✨</view>
+        <view class="action-text">智能推荐</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 推荐配置方案 -->
+  <view class="recommend-section card">
+    <view class="section-header flex-row justify-between align-center">
+      <view class="section-title">推荐配置</view>
+      <view class="view-more" bindtap="navToPlans">更多 ></view>
+    </view>
+
+    <view class="plan-cards">
+      <block wx:for="{{recommendPlans}}" wx:key="id">
+        <view class="plan-card" bindtap="navToDetail" data-id="{{item.id}}">
+          <view class="plan-info">
+            <view class="plan-name">{{item.name}}</view>
+            <view class="plan-desc text-caption">{{item.desc}}</view>
+            <view class="flex-row justify-between align-center mt-10">
+              <view class="text-price">¥{{item.price}}</view>
+              <view class="view-count text-caption">
+                <text class="view-icon">👁️</text> {{item.views}}
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 分类导航 -->
+  <view class="category-section card">
+    <view class="section-title">电脑分类</view>
+    <view class="category-grid flex-row justify-between flex-wrap">
+      <block wx:for="{{categoryList}}" wx:key="id">
+        <view class="category-item flex-column align-center" bindtap="navToPlans" data-category="{{item.id}}">
+          <view class="category-icon">
+            <image src="{{item.icon}}" mode="aspectFit"></image>
+          </view>
+          <view class="category-name">{{item.name}}</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 立即定制按钮 -->
+  <view class="create-btn-container">
+    <button class="btn btn-primary" bindtap="navToConfig">立即定制我的电脑</button>
+  </view>
+</view> 

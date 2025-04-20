@@ -1,0 +1,4 @@
+<!--packageImage/pages/index/index.wxml-->
+<view class="container">
+  <text>图片资源包</text>
+</view> 

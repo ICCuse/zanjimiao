@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>首页 - 台式电脑配置生成助手</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="device-container">
+    <!-- iOS状态栏 -->
+    <div class="status-bar">
+      <div class="time">14:30</div>
+      <div class="icons">
+        <i class="fas fa-signal"></i>
+        <i class="fas fa-wifi"></i>
+        <i class="fas fa-battery-three-quarters"></i>
+      </div>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="app-container">
+      <!-- 欢迎卡片 -->
+      <div class="card" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary-color)); margin-top: 10px;">
+        <h2 style="color: white; margin-bottom: 10px;">欢迎使用配置助手</h2>
+        <p style="color: rgba(255,255,255,0.9); font-size: 14px;">智能推荐最适合您需求的电脑配置</p>
+        <button class="btn" style="background-color: white; color: var(--primary-color); margin-top: 15px;">
+          <i class="fas fa-wand-magic-sparkles"></i> 快速开始
+        </button>
+      </div>
+
+      <!-- 推荐配置 -->
+      <h3 style="margin: 20px 0 15px; font-size: 18px;">热门配置方案</h3>
+      <div class="card">
+        <div style="display: flex; align-items: center;">
+          <div style="width: 70px; height: 70px; background-color: #333; border-radius: 8px; overflow: hidden;">
+            <img src="https://images.unsplash.com/photo-1587202372775-e229f172b9d7" alt="游戏电脑" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <div style="margin-left: 15px;">
+            <h4 style="margin-bottom: 4px;">高性能游戏主机</h4>
+            <p style="font-size: 13px; color: var(--text-gray);">RTX 4070Ti + i7-13700K</p>
+            <p style="font-size: 13px; margin-top: 4px;"><span style="color: var(--primary-color); font-weight: 600;">¥12,999</span> <span style="color: var(--text-gray); font-size: 12px;">性价比极高</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; align-items: center;">
+          <div style="width: 70px; height: 70px; background-color: #333; border-radius: 8px; overflow: hidden;">
+            <img src="https://images.unsplash.com/photo-1593152167544-085d3b9c4938" alt="工作站" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <div style="margin-left: 15px;">
+            <h4 style="margin-bottom: 4px;">3D渲染工作站</h4>
+            <p style="font-size: 13px; color: var(--text-gray);">RTX 4090 + Ryzen 9 7950X</p>
+            <p style="font-size: 13px; margin-top: 4px;"><span style="color: var(--primary-color); font-weight: 600;">¥25,999</span> <span style="color: var(--text-gray); font-size: 12px;">专业创作首选</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷功能 -->
+      <h3 style="margin: 20px 0 15px; font-size: 18px;">快捷功能</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="card" style="margin-bottom: 0;">
+          <i class="fas fa-bolt" style="color: var(--primary-color); font-size: 24px; margin-bottom: 10px;"></i>
+          <h4 style="margin-bottom: 4px;">一键配置</h4>
+          <p style="font-size: 13px; color: var(--text-gray);">智能推荐最佳组合</p>
+        </div>
+        <div class="card" style="margin-bottom: 0;">
+          <i class="fas fa-coins" style="color: var(--primary-color); font-size: 24px; margin-bottom: 10px;"></i>
+          <h4 style="margin-bottom: 4px;">预算优化</h4>
+          <p style="font-size: 13px; color: var(--text-gray);">性价比配置推荐</p>
+        </div>
+        <div class="card" style="margin-bottom: 0;">
+          <i class="fas fa-gamepad" style="color: var(--primary-color); font-size: 24px; margin-bottom: 10px;"></i>
+          <h4 style="margin-bottom: 4px;">游戏性能</h4>
+          <p style="font-size: 13px; color: var(--text-gray);">测试游戏帧数表现</p>
+        </div>
+        <div class="card" style="margin-bottom: 0;">
+          <i class="fas fa-share-nodes" style="color: var(--primary-color); font-size: 24px; margin-bottom: 10px;"></i>
+          <h4 style="margin-bottom: 4px;">分享配置</h4>
+          <p style="font-size: 13px; color: var(--text-gray);">与好友共享方案</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 底部导航栏 -->
+    <div class="tab-bar">
+      <div class="tab-item active">
+        <i class="fas fa-home"></i>
+        <span>首页</span>
+      </div>
+      <div class="tab-item">
+        <i class="fas fa-laptop"></i>
+        <span>配置</span>
+      </div>
+      <div class="tab-item">
+        <i class="fas fa-list-check"></i>
+        <span>方案</span>
+      </div>
+      <div class="tab-item">
+        <i class="fas fa-user"></i>
+        <span>我的</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

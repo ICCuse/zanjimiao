@@ -1,0 +1,44 @@
+<view class="container">
+  <view class="header">
+    <view class="title">数据导入工具</view>
+    <view class="subtitle">导入JSON格式的组件数据</view>
+  </view>
+  
+  <!-- 导入选项 -->
+  <view class="option-area">
+    <view class="option-item">
+      <checkbox checked="{{clearFirst}}" bindtap="toggleClearFirst"></checkbox>
+      <text>导入前清空所有现有数据</text>
+    </view>
+  </view>
+  
+  <!-- 导入状态 -->
+  <view class="status-area" wx:if="{{importStatus}}">
+    <text class="status-text">{{importStatus}}</text>
+  </view>
+  
+  <!-- JSON输入区域 -->
+  <view class="import-area">
+    <view class="label">粘贴JSON数据:</view>
+    <textarea 
+      class="json-textarea" 
+      placeholder="从components_simple.json粘贴数据..." 
+      bindinput="onJsonDataInput" 
+      value="{{jsonData}}"
+      disabled="{{loading}}"
+    ></textarea>
+    
+    <button class="import-btn" bindtap="importData" disabled="{{loading}}">
+      {{loading ? '导入中...' : '开始导入'}}
+    </button>
+    
+    <view class="import-tips">
+      <text class="tips-title">提示:</text>
+      <text class="tips-content">
+        1. 导入前请确认JSON数据格式正确
+        2. 大量数据导入可能需要较长时间
+        3. 导入完成后请刷新其他页面查看效果
+      </text>
+    </view>
+  </view>
+</view> 

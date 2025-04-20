@@ -1,0 +1,226 @@
+.container {
+  padding: 20rpx;
+}
+
+.price-update-panel {
+  background-color: #fff;
+  padding: 30rpx;
+  border-radius: 10rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.update-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  color: #333;
+}
+
+.update-strategy {
+  display: flex;
+  margin-bottom: 30rpx;
+}
+
+.strategy-item {
+  flex: 1;
+  padding: 20rpx;
+  border: 2rpx solid #eee;
+  border-radius: 8rpx;
+  margin: 0 10rpx;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.strategy-item.active {
+  border-color: #07c160;
+  background-color: rgba(7, 193, 96, 0.1);
+}
+
+.strategy-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.strategy-desc {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30rpx;
+}
+
+.update-btn {
+  width: 100%;
+  background-color: #07c160;
+  color: #fff;
+  font-size: 30rpx;
+  margin-top: 10rpx;
+}
+
+.create-test-btn {
+  flex: 1;
+  background-color: #1989fa;
+  color: #fff;
+  font-size: 28rpx;
+}
+
+.debug-panel {
+  margin: 20rpx 0;
+  padding: 20rpx;
+  background-color: #f7f7f7;
+  border-radius: 10rpx;
+}
+
+.debug-btn {
+  background-color: #ff9900;
+  color: #fff;
+  font-size: 28rpx;
+}
+
+.goods-list {
+  margin-top: 20rpx;
+}
+
+.goods-item {
+  background-color: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  border-radius: 10rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.goods-info {
+  margin-bottom: 20rpx;
+}
+
+.goods-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+  color: #333;
+}
+
+.price-info {
+  font-size: 28rpx;
+  margin-bottom: 10rpx;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.price-label {
+  color: #666;
+}
+
+.price-value {
+  color: #ff5000;
+  font-weight: bold;
+  margin-right: 20rpx;
+}
+
+.supplier-price {
+  color: #1989fa;
+  font-size: 24rpx;
+  background: #e6f4ff;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+}
+
+.sku-info {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.not-linked {
+  color: #f56c6c;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sku-btn {
+  font-size: 26rpx;
+  margin-left: 20rpx;
+  padding: 0 20rpx;
+  min-width: 160rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+}
+
+.sku-btn.modify {
+  background-color: #409eff;
+  color: #fff;
+}
+
+.sku-btn.link {
+  background-color: #67c23a;
+  color: #fff;
+}
+
+.sku-btn.supplier {
+  background-color: #909399;
+  color: #fff;
+}
+
+.edit-area {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #eee;
+}
+
+.sku-input, .price-input {
+  width: 100%;
+  height: 80rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  margin-bottom: 20rpx;
+  box-sizing: border-box;
+}
+
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-btn {
+  font-size: 26rpx;
+  margin-left: 20rpx;
+  padding: 0 20rpx;
+  min-width: 120rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+}
+
+.edit-btn.cancel {
+  background-color: #909399;
+  color: #fff;
+}
+
+.edit-btn.save {
+  background-color: #67c23a;
+  color: #fff;
+}
+
+.status-info {
+  margin-top: 30rpx;
+  padding: 20rpx;
+  background-color: #f5f7fa;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.empty-tip {
+  margin-top: 100rpx;
+  text-align: center;
+  color: #909399;
+  font-size: 28rpx;
+} 

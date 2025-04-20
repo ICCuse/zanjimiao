@@ -1,0 +1,292 @@
+/* pages/profile/profile.wxss */
+
+/* 用户信息区域 */
+.user-info-section {
+  padding-top: 30rpx;
+}
+
+.user-info-card {
+  padding: 30rpx;
+}
+
+.unlogin-box {
+  padding: 40rpx 20rpx;
+}
+
+.avatar-placeholder {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background-color: var(--surface-color);
+  border: 2rpx solid var(--border-color);
+  margin-bottom: 20rpx;
+}
+
+.login-tips {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  margin-bottom: 20rpx;
+}
+
+.user-info-box {
+  padding: 10rpx;
+}
+
+.avatar-box {
+  margin-right: 20rpx;
+}
+
+.user-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 2rpx solid var(--primary-color);
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 10rpx;
+}
+
+.user-meta {
+  margin-top: 10rpx;
+}
+
+.user-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 40rpx;
+}
+
+.meta-count {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.meta-label {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+  margin-top: 4rpx;
+}
+
+/* 标签页导航 */
+.tab-nav {
+  margin-top: 20rpx;
+  padding: 0;
+}
+
+.tab-list {
+  width: 100%;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  position: relative;
+}
+
+.tab-text {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+}
+
+.tab-item.active .tab-text {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.tab-line {
+  position: absolute;
+  bottom: -3rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40rpx;
+  height: 4rpx;
+  background-color: var(--primary-color);
+  border-radius: 2rpx;
+}
+
+/* 内容区域 */
+.tab-content {
+  padding: 20rpx 0;
+}
+
+.history-header, .configs-header {
+  padding: 10rpx 20rpx;
+  margin-bottom: 10rpx;
+}
+
+.clear-btn, .create-btn {
+  font-size: 24rpx;
+  color: var(--primary-color);
+  background-color: rgba(33, 150, 243, 0.1);
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.plan-list {
+  padding: 10rpx 0;
+}
+
+.plan-item {
+  margin-bottom: 20rpx;
+  padding: 20rpx;
+}
+
+.plan-info {
+  flex: 1;
+}
+
+.plan-name {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.plan-desc {
+  margin: 6rpx 0;
+}
+
+.plan-meta {
+  margin-top: 10rpx;
+}
+
+.price-performance {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-price {
+  color: #f44336;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.performance-box {
+  margin-top: 6rpx;
+}
+
+.performance-bar {
+  width: 120rpx;
+  height: 6rpx;
+  background-color: #f0f0f0;
+  border-radius: 3rpx;
+  overflow: hidden;
+  margin-top: 8rpx;
+}
+
+.performance-fill {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 3rpx;
+}
+
+.performance-text {
+  font-size: 20rpx;
+  color: var(--text-secondary);
+  margin-top: 4rpx;
+}
+
+.remove-btn {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.remove-icon {
+  color: #f44336;
+  font-size: 40rpx;
+}
+
+/* 我的配置 */
+.action-buttons {
+  margin-top: 16rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  padding: 8rpx 24rpx;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  margin-left: 16rpx;
+}
+
+.edit-btn {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: var(--primary-color);
+}
+
+.delete-btn {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.create-config-btn {
+  margin-top: 30rpx;
+  padding: 16rpx 40rpx;
+  background-color: var(--primary-color);
+  color: #fff;
+  border-radius: 30rpx;
+  font-size: 28rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  padding: 80rpx 0;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  font-weight: 500;
+  margin-bottom: 10rpx;
+}
+
+.empty-tips {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 0 60rpx;
+}
+
+/* 设置区域 */
+.settings-section {
+  margin-top: 20rpx;
+}
+
+.settings-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+}
+
+.settings-item {
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+}
+
+.settings-item-name {
+  font-size: 28rpx;
+}
+
+.arrow-icon {
+  color: var(--text-hint);
+  font-size: 24rpx;
+} 
