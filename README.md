@@ -47,8 +47,22 @@
 2. 开通云开发，获取云环境 ID
 3. 将 `project.config.json` 中的 `appid` 替换为你的 AppID
 4. 全局搜索 `your-cloud-env-id` 替换为你的云环境 ID
-5. 导入云数据库集合（cpu_data / motherboard_data / memory_data / gpu_data / disk_data / power_data / case_data / cooler_data）
-6. 微信开发者工具打开项目，上传
+5. 每个云函数目录内执行 `npm install` 安装依赖
+6. 导入云数据库集合，字段参见下方数据模型
+7. 微信开发者工具打开项目，上传
+
+### 云数据库集合
+
+| 集合 | 字段 |
+|---|---|
+| `cpu_data` | 名称、品牌、价格、接口、核心、频率、功率 |
+| `motherboard_data` | 名称、品牌、价格、接口、芯片组、内存插槽、M2接口、SATA、尺寸 |
+| `memory_data` | 名称、品牌、价格、容量、接口类型、主频 |
+| `gpu_data` | 名称、品牌、价格、显存容量、Boost频率、功耗、尺寸、系列、位宽 |
+| `disk_data` | 型号、品牌、价格、容量、接口、系列、速率 |
+| `power_data` | 名称、品牌、价格、功率、系列、能认证 |
+| `case_data` | 名称、品牌、价格、产品尺寸、CPU散热器限高、显卡限长、硬盘仓数量、系列、风扇位 |
+| `cooler_data` | 名称、品牌、价格、尺寸、平台兼容、散热形式、功耗推荐 |
 
 ## 许可
 
