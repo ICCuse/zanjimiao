@@ -1,0 +1,51 @@
+<!--pages/hardware/hardware.wxml-->
+<view class="guide-container">
+  <swiper class="swiper" indicator-dots="{{false}}" autoplay="{{false}}" current="{{currentSlide-1}}">
+    <swiper-item>
+      <view class="slide">
+        <view class="logo animate-float">
+          <view class="logo-circle">
+            <view class="logo-text">PC</view>
+          </view>
+        </view>
+        <text class="slide-title">欢迎使用台式电脑配置助手</text>
+        <text class="slide-desc">一款专业的电脑硬件配置工具，帮助您轻松组装理想中的电脑</text>
+      </view>
+    </swiper-item>
+    
+    <swiper-item>
+      <view class="slide">
+        <image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgMjQwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2ZmOGMwMDt9LmNscy0ye2ZpbGw6IzI5MjkyOTt9LmNscy0ze2ZpbGw6I2ZmZmZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmNvbmZpZ3VyYXRpb248L3RpdGxlPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iMTIwIiBjeT0iMTIwIiByPSIxMjAiLz48Y2lyY2xlIGNsYXNzPSJjbHMtMiIgY3g9IjEyMCIgY3k9IjEyMCIgcj0iOTAiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0xNjAsMTAwSDgwYTEwLDEwLDAsMCwwLTEwLDEwdjgwYTEwLDEwLDAsMCwwLDEwLDEwaDgwYTEwLDEwLDAsMCwwLDEwLTEwVjExMEExMCwxMCwwLDAsMCwxNjAsMTAwWm0tNDAsNzBIOTB2LTEwaDMwWm0wLTIwSDkwdi0xMGgzMFptMzAsMjBoLTIwdi0xMGgyMFptMC0yMGgtMjB2LTEwaDIwWm0wLTIwSDkwdi0yMGg2MFoiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0xODAsNjBINjBBMTAsMTAsMCwwLDAsNTAsNzBWODVhNSw1LDAsMCwwLDUuMTMsNUgxODVhNSw1LDAsMCwwLDUtNVY3MEExMCwxMCwwLDAsMCwxODAsNjBaIi8+PHJlY3QgY2xhc3M9ImNscy0zIiB4PSI3MCIgeT0iNDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAiIHJ4PSI1Ii8+PC9zdmc+" class="slide-img" mode="aspectFit"></image>
+        <text class="slide-title">专业配置推荐</text>
+        <text class="slide-desc">根据您的预算和需求，智能推荐最适合的电脑配置方案</text>
+      </view>
+    </swiper-item>
+    
+    <swiper-item>
+      <view class="slide">
+        <image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgMjQwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2ZmOGMwMDt9LmNscy0ye2ZpbGw6IzI5MjkyOTt9LmNscy0ze2ZpbGw6I2ZmZmZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmNvbXBhcmlzb248L3RpdGxlPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iMTIwIiBjeT0iMTIwIiByPSIxMjAiLz48cmVjdCBjbGFzcz0iY2xzLTIiIHg9IjQwIiB5PSI3MCIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIHJ4PSIxMCIvPjxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTcwLDkwaDMwdjYwSDcwWm01LDEwaDIwdjEwSDc1Wm0wLDIwaDIwdjEwSDc1Wm0wLDIwaDIwdjEwSDc1WiIvPjxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTE0MCw5MGgzMHY2MGgtMzBabTUsMTBoMjB2MTBoLTIwWm0wLDIwaDIwdjEwaC0yMFptMCwyMGgyMHYxMGgtMjBaIi8+PHBhdGggY2xhc3M9ImNscy0zIiBkPSJNMTIwLDkwYTE1LDE1LDAsMCwwLTEzLDcuNWwxMCw1YTUsNSwwLDAsMSw2LDBsMTAtNUExNSwxNSwwLDAsMCwxMjAsOTBaIi8+PHBhdGggY2xhc3M9ImNscy0zIiBkPSJNMTIwLDE1MGExNSwxNSwwLDAsMCwxMy03LjVsLTEwLTVhNSw1LDAsMCwxLTYsMGwtMTAsNUExNSwxNSwwLDAsMCwxMjAsMTUwWiIvPjxsaW5lIGNsYXNzPSJjbHMtMyIgeDE9IjEyMCIgeTE9IjYwIiB4Mj0iMTIwIiB5Mj0iNDAiLz48cmVjdCBjbGFzcz0iY2xzLTEiIHg9IjExNSIgeT0iNDAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgcng9IjUiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0xMjMsMTIwaC02YTIsMiwwLDAsMS0yLTJWMTA1YTIsMiwwLDAsMSwyLTJoNmEyLDIsMCwwLDEsMiwydjEzQTIsMiwwLDAsMSwxMjMsMTIwWiIvPjxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTEyMywxMzdoLTZhMiwyLDAsMCwxLTItMlYxMjJhMiwyLDAsMCwxLDItMmg2YTIsMiwwLDAsMSwyLDJ2MTNBMiwyLDAsMCwxLDEyMywxMzdaIi8+PC9zdmc+" class="slide-img" mode="aspectFit"></image>
+        <text class="slide-title">性能价格对比</text>
+        <text class="slide-desc">轻松对比不同配置的性能差异和性价比，做出明智选择</text>
+      </view>
+    </swiper-item>
+    
+    <swiper-item>
+      <view class="slide">
+        <image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgMjQwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2ZmOGMwMDt9LmNscy0ye2ZpbGw6IzI5MjkyOTt9LmNscy0ze2ZpbGw6I2ZmZmZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnNhdmU8L3RpdGxlPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iMTIwIiBjeT0iMTIwIiByPSIxMjAiLz48cmVjdCBjbGFzcz0iY2xzLTIiIHg9IjYwIiB5PSI2MCIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIxMCIvPjxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTE1MCw4MEg5MEExMCwxMCwwLDAsMCw4MCw5MHY2MGExMCwxMCwwLDAsMCwxMCwxMGg2MGExMCwxMCwwLDAsMCwxMC0xMFY5MEExMCwxMCwwLDAsMCwxNTAsODBaTTEyMCwxNDBhMjAsMjAsMCwxLDEsMjAtMjBBMjAsMjAsMCwwLDEsMTIwLDE0MFoiLz48Y2lyY2xlIGNsYXNzPSJjbHMtMSIgY3g9IjEyMCIgY3k9IjEyMCIgcj0iMTAiLz48L3N2Zz4=" class="slide-img" mode="aspectFit"></image>
+        <text class="slide-title">保存分享配置</text>
+        <text class="slide-desc">保存您喜欢的配置方案，随时查看和分享给朋友</text>
+      </view>
+    </swiper-item>
+  </swiper>
+  
+  <view class="indicators">
+    <block wx:for="{{[1, 2, 3, 4]}}" wx:key="*this">
+      <view class="indicator {{currentSlide == item ? 'active' : ''}}" bindtap="goToSlide" data-slide="{{item}}"></view>
+    </block>
+  </view>
+  
+  <view class="buttons">
+    <button class="btn btn-skip" bindtap="skipGuide">跳过</button>
+    <button class="btn btn-primary" bindtap="nextSlide">{{currentSlide == 4 ? '立即体验' : '下一步'}}</button>
+  </view>
+</view> 

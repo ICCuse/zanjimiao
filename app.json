@@ -1,9 +1,15 @@
 {
   "pages": [
+    "pages/hardware/hardware",
     "pages/home/home",
     "pages/config/config",
     "pages/profile/profile",
-    "pages/components/cpu"
+    "pages/compare/compare",
+    "pages/components/cpu",
+    "pages/configPreview/configPreview",
+    "pages/shared/shared",
+    "pages/recommendation/index",
+    "pages/recommendation/result"
   ],
   "subpackages": [
     {
@@ -68,5 +74,6 @@
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "cloud": true
 } 

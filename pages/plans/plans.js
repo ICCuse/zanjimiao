@@ -22,7 +22,14 @@ Page({
       { id: 'work', name: '工作站' },
       { id: 'office', name: '办公电脑' },
       { id: 'budget', name: '预算主机' }
-    ]
+    ],
+    // 新增的分页相关参数
+    pageSize: 10,
+    currentPage: 1,
+    hasMoreData: true,
+    loadingMore: false,
+    allPlans: [], // 存储所有筛选后但未分页的数据
+    userConfigs: [] // 保存用户配置
   },
 
   onLoad(options) {
@@ -44,18 +51,27 @@ Page({
     // 从本地存储中获取参数
     const plansParams = wx.getStorageSync('plans_params');
     if (plansParams) {
-      console.log('从本地存储获取参数:', plansParams);
+      app.debugLog('从本地存储获取参数:', plansParams);
       
       // 如果有分类参数，设置分类并刷新数据
       if (plansParams.category && plansParams.category !== this.data.selectedCategory) {
         this.setData({
-          selectedCategory: plansParams.category
+          selectedCategory: plansParams.category,
+          currentPage: 1, // 重置页码
+          planList: [] // 清空当前列表
         });
         this.getPlanList();
       }
       
       // 清除参数，避免下次进入页面时重复使用
       wx.removeStorageSync('plans_params');
+    }
+  },
+
+  // 监听页面滚动到底部事件
+  onReachBottom() {
+    if (this.data.hasMoreData && !this.data.loadingMore) {
+      this.loadMoreData();
     }
   },
   
@@ -147,7 +163,9 @@ Page({
     const { sort } = e.currentTarget.dataset
     this.setData({
       selectedSort: sort,
-      showSort: false
+      showSort: false,
+      currentPage: 1, // 重置页码
+      planList: [] // 清空当前列表
     })
     
     // 更新当前排序名称
@@ -175,67 +193,81 @@ Page({
     const { category } = e.currentTarget.dataset
     this.setData({
       selectedCategory: category,
-      isShowFilter: false
+      isShowFilter: false,
+      currentPage: 1, // 重置页码
+      planList: [] // 清空当前列表
     })
     this.getPlanList()
   },
 
-  // 获取配置方案列表
+  // 获取配置方案列表（现在只处理数据筛选和排序，实际加载由loadCurrentPageData完成）
   getPlanList() {
-    this.setData({ loading: true })
+    this.setData({
+      loading: true
+    })
     
-    // 从全局获取数据
-    let allPlans = []
-    
-    // 获取预设配置方案
+    // 将所有预设方案和用户配置合并处理
     const presetPlans = app.globalData.presetPlans || []
-    console.log('预设方案数量:', presetPlans.length);
+    app.debugLog('预设方案数量:', presetPlans.length);
     
-    // 获取用户配置方案
-    this.loadUserConfigs()
+    // 从global数据获取用户配置
+    const userConfigs = app.globalData.userConfigs || []
     
-    // 合并所有方案
-    allPlans = [...presetPlans, ...this.data.userConfigs]
-    console.log('合并后总方案数量:', allPlans.length);
+    // 合并预设方案和用户配置
+    let allPlans = [...presetPlans]
     
-    // 应用筛选逻辑
-    let planList = allPlans
-    
-    if (this.data.selectedCategory !== 'all') {
-      planList = planList.filter(plan => {
-        // 如果没有purpose字段，默认归类为custom
-        const purpose = plan.purpose || 'custom';
-        return purpose === this.data.selectedCategory;
-      });
+    // 根据选择的分类进行过滤
+    const { selectedCategory } = this.data
+    if (selectedCategory !== 'all') {
+      allPlans = allPlans.filter(plan => plan.category === selectedCategory)
     }
     
-    // 应用排序逻辑
-    switch (this.data.selectedSort) {
-      case 'price-asc':
-        planList.sort((a, b) => a.totalPrice - b.totalPrice)
-        break
-      case 'price-desc':
-        planList.sort((a, b) => b.totalPrice - a.totalPrice)
-        break
-      case 'views':
-        planList.sort((a, b) => (b.views || 0) - (a.views || 0))
-        break
-      case 'performance':
-        planList.sort((a, b) => {
-          const perfA = a.performance ? a.performance.overall : 0
-          const perfB = b.performance ? b.performance.overall : 0
-          return perfB - perfA
-        })
-        break
-      case 'newest':
-      default:
-        // 按创建时间排序（最新发布）
-        planList.sort((a, b) => (b.createTime || 0) - (a.createTime || 0))
-        break
+    // 根据选择的排序方式进行排序
+    this.sortPlans(allPlans)
+    
+    app.debugLog('合并后总方案数量:', allPlans.length);
+    
+    // 保存所有筛选后的数据，用于分页加载
+    this.setData({
+      allPlans: allPlans,
+      currentPage: 1,
+      hasMoreData: allPlans.length > this.data.pageSize,
+      loading: false,
+      userConfigs: userConfigs
+    }, () => {
+      // 加载第一页数据
+      this.loadCurrentPageData()
+    })
+  },
+
+  // 加载当前页数据
+  loadCurrentPageData() {
+    const { allPlans, currentPage, pageSize, planList } = this.data;
+    
+    if (allPlans.length === 0) {
+      this.setData({
+        loadingMore: false,
+        hasMoreData: false
+      });
+      return;
+    }
+    
+    // 计算当前页的数据
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const currentPageData = allPlans.slice(start, end);
+    
+    // 如果没有更多数据了
+    if (currentPageData.length === 0) {
+      this.setData({
+        loadingMore: false,
+        hasMoreData: false
+      });
+      return;
     }
     
     // 最终处理，确保每个方案都有必要的字段
-    planList = planList.map(plan => {
+    const processedData = currentPageData.map(plan => {
       // 确保有性能数据
       if (!plan.performance) {
         plan.performance = app.evaluatePerformance(plan) || { 
@@ -259,68 +291,92 @@ Page({
       return plan;
     });
     
-    console.log('最终显示方案数量:', planList.length);
+    // 添加到当前列表
+    const newPlanList = [...planList, ...processedData];
     
     this.setData({
-      planList,
-      loading: false
-    })
+      planList: newPlanList,
+      loadingMore: false,
+      hasMoreData: end < allPlans.length
+    });
+    
+    app.debugLog(`加载第${currentPage}页数据，本页${processedData.length}条，总共${newPlanList.length}条`);
+  },
+  
+  // 加载更多数据
+  loadMoreData() {
+    if (!this.data.hasMoreData || this.data.loadingMore) return;
+    
+    // 标记加载状态
+    this.setData({
+      loadingMore: true
+    });
+    
+    // 计算下一页
+    const nextPage = this.data.currentPage + 1;
+    const pageSize = this.data.pageSize;
+    const start = (nextPage - 1) * pageSize;
+    const end = start + pageSize;
+    
+    // 从全部数据中提取当前页
+    const processedData = this.data.allPlans.slice(start, end);
+    
+    // 判断是否还有更多数据
+    const hasMore = end < this.data.allPlans.length;
+    
+    // 合并数据
+    const newPlanList = [...this.data.planList, ...processedData];
+    
+    app.debugLog(`加载第${nextPage}页数据，本页${processedData.length}条，总共${newPlanList.length}条`);
+    
+    // 更新状态
+    this.setData({
+      planList: newPlanList,
+      currentPage: nextPage,
+      hasMoreData: hasMore,
+      loadingMore: false
+    });
   },
 
   // 跳转到详情页
   navToDetail(e) {
-    const { id } = e.currentTarget.dataset
-    if (!id) {
-      console.error('配置ID无效');
-      return;
-    }
-    
-    // 确保配置数据存在
-    const configData = app.getConfigById(id);
-    if (!configData) {
-      console.error('找不到配置数据:', id);
-      wx.showToast({
-        title: '未找到配置数据',
-        icon: 'none'
+    try {
+      const { id } = e.currentTarget.dataset;
+      app.debugLog('正在跳转到详情页，ID:', id);
+      
+      wx.navigateTo({
+        url: '/packageDetail/pages/detail/detail?id=' + id,
+        fail: err => {
+          console.error('跳转详情页失败:', err);
+          
+          // 尝试直接跳转
+          wx.navigateTo({
+            url: '/pages/detail/detail?id=' + id,
+            fail: err2 => {
+              console.error('第二次跳转详情页失败:', err2);
+              wx.showToast({
+                title: '页面跳转失败',
+                icon: 'none'
+              });
+            }
+          });
+        }
       });
-      return;
+    } catch (err) {
+      console.error('跳转详情页异常:', err);
     }
-    
-    console.log('正在跳转到详情页，ID:', id);
-    
-    // 添加到浏览历史
-    app.addToViewHistory(id)
-    
-    wx.navigateTo({
-      url: `/packageDetail/pages/detail/detail?id=${id}`,
-      fail: function(err) {
-        console.error('跳转到详情页失败:', err);
-        wx.showToast({
-          title: '跳转失败',
-          icon: 'none'
-        });
-      }
-    })
   },
 
-  // 跳转到配置生成页
+  // 跳转到配置页
   navToConfig() {
-    console.log('正在跳转到配置页面...');
+    app.debugLog('正在跳转到配置页面...');
     
-    // 如果需要传递参数，使用本地存储保存
-    const configParams = {
-      from: 'plans',
-      timestamp: Date.now()
-    };
-    wx.setStorageSync('config_params', configParams);
-    
-    wx.switchTab({  // 改用switchTab因为配置页面是一个Tab页面
+    wx.navigateTo({
       url: '/pages/config/config',
-      fail: function(err) {
-        console.error('跳转到配置页面失败:', err);
-        // 显示错误提示
+      fail: err => {
+        console.error('跳转配置页失败:', err);
         wx.showToast({
-          title: '无法跳转到配置页面',
+          title: '页面跳转失败',
           icon: 'none'
         });
       }
@@ -335,37 +391,18 @@ Page({
   /**
    * 加载用户配置
    */
-  loadUserConfigs: function() {
-    wx.showLoading({
-      title: '加载中',
-      mask: true
-    });
-    
-    app.getUserConfigs()
-      .then(userConfigs => {
-        console.log('获取用户配置:', userConfigs.length);
-        
+  loadUserConfigs() {
+    return new Promise((resolve, reject) => {
+      app.getUserConfigs().then(configs => {
+        app.debugLog('获取用户配置:', configs.length);
         this.setData({
-          userConfigs: userConfigs || [],
-          loadingUserConfigs: false
+          userConfigs: configs
         });
-        
-        wx.hideLoading();
-      })
-      .catch(err => {
+        resolve(configs);
+      }).catch(err => {
         console.error('获取用户配置失败:', err);
-        
-        this.setData({
-          userConfigs: [],
-          loadingUserConfigs: false
-        });
-        
-        wx.hideLoading();
-        
-        wx.showToast({
-          title: '加载失败',
-          icon: 'none'
-        });
+        reject(err);
       });
+    });
   },
 }) 

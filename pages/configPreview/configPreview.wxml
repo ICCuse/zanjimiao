@@ -1,0 +1,70 @@
+<view class="container">
+  <!-- 标题栏 -->
+  <view class="header">
+    <view class="title">{{configName}}</view>
+    <view class="price">总价: ¥{{totalPrice}}</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading">正在加载配置...</view>
+  </view>
+
+  <!-- 配置内容 -->
+  <view class="config-content" wx:else>
+    <!-- 配件清单标题 -->
+    <view class="section-title">配件清单</view>
+
+    <!-- 组件列表 -->
+    <view class="components-list">
+      <block wx:for="{{tableData}}" wx:key="index">
+        <view class="component-item {{index % 2 === 0 ? 'even-row' : ''}}">
+          <!-- 组件图标 -->
+          <view class="component-icon">
+            <text class="icon-text">{{item.icon || '🔧'}}</text>
+          </view>
+          
+          <!-- 组件信息 -->
+          <view class="component-main">
+            <!-- 主要信息行 -->
+            <view class="component-row">
+              <view class="component-type">{{item.type}}:</view>
+              <view class="component-name">{{item.name}}</view>
+              <view class="component-price">¥{{item.subtotal}}</view>
+            </view>
+            
+            <!-- 显示品牌和型号行 -->
+            <view class="component-brand-model">
+              <text class="brand-item" wx:if="{{item.brand}}">品牌: {{item.brand}}</text>
+              <text class="model-item" wx:if="{{item.model}}">型号: {{item.model}}</text>
+              <text class="quantity-item" wx:if="{{item.quantity > 1}}">数量: {{item.quantity}}</text>
+            </view>
+            
+            <!-- 规格信息行 - 只显示最重要的规格 -->
+            <view class="component-specs" wx:if="{{item.specs && item.specs.length > 0}}">
+              <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="label" wx:if="{{index < 3}}">
+                <text class="spec-item">{{spec.label}}: {{spec.value}}</text>
+              </block>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <!-- 配置说明（可选） -->
+    <view class="config-note" wx:if="{{config.note}}">
+      <view class="note-title">配置说明</view>
+      <view class="note-content">{{config.note}}</view>
+    </view>
+  </view>
+
+  <!-- 底部按钮区域 -->
+  <view class="footer">
+    <button class="btn btn-back" bindtap="backToConfig">返回编辑</button>
+    <button class="btn btn-share" bindtap="shareConfig">分享配置</button>
+    <button class="btn btn-save" bindtap="saveConfig">保存配置</button>
+  </view>
+  
+  <!-- 隐藏的Canvas用于生成分享图片 -->
+  <canvas canvas-id="shareCanvas" style="width: 750px; height: 1800px; position: fixed; left: -2000px; top: -2000px;"></canvas>
+</view> 

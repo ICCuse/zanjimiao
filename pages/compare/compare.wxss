@@ -1,0 +1,604 @@
+/* pages/compare/compare.wxss */
+
+/* 全局容器 */
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 页面标题 */
+.page-header {
+  margin-bottom: 30rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+}
+
+/* 选择信息 */
+.selection-info {
+  background-color: var(--surface-color);
+  padding: 20rpx;
+  border-radius: 12rpx;
+  margin-bottom: 30rpx;
+}
+
+.selection-count {
+  font-size: 32rpx;
+  color: var(--text-primary);
+  margin-bottom: 10rpx;
+}
+
+.selection-hint {
+  font-size: 26rpx;
+  color: var(--primary-color);
+}
+
+/* 按钮 */
+.action-button-container {
+  margin: 30rpx 0;
+}
+
+.btn {
+  border-radius: 8rpx;
+  padding: 20rpx 40rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.btn-primary[disabled] {
+  background-color: var(--surface-color);
+  color: var(--text-hint);
+  opacity: 0.8;
+}
+
+/* 配置列表 */
+.config-list-container {
+  margin-top: 30rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 30rpx 0 20rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.config-list {
+  background-color: var(--surface-color);
+  border-radius: 12rpx;
+  overflow: hidden;
+  margin-bottom: 30rpx;
+}
+
+.config-item {
+  display: flex;
+  padding: 20rpx 30rpx;
+  border-bottom: 2rpx solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.config-item:last-child {
+  border-bottom: none;
+}
+
+.config-item.selected {
+  background-color: rgba(255, 140, 0, 0.1);
+}
+
+.config-checkbox {
+  width: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox {
+  width: 36rpx;
+  height: 36rpx;
+  border: 2rpx solid var(--text-hint);
+  border-radius: 50%;
+  position: relative;
+}
+
+.checkbox.checked {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+}
+
+.checkbox.checked::after {
+  content: '';
+  position: absolute;
+  top: 8rpx;
+  left: 12rpx;
+  width: 8rpx;
+  height: 16rpx;
+  border: solid white;
+  border-width: 0 3rpx 3rpx 0;
+  transform: rotate(45deg);
+}
+
+.config-content {
+  flex: 1;
+  padding-left: 20rpx;
+}
+
+.config-name {
+  font-size: 30rpx;
+  color: var(--text-primary);
+  margin-bottom: 10rpx;
+}
+
+.config-details {
+  display: flex;
+  justify-content: space-between;
+}
+
+.config-date, .config-type {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+
+.config-price {
+  font-size: 26rpx;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* 空状态提示 */
+.empty-tip {
+  text-align: center;
+  padding: 60rpx 0;
+  color: var(--text-hint);
+  font-size: 28rpx;
+  background-color: var(--surface-color);
+  border-radius: 12rpx;
+  margin-bottom: 30rpx;
+}
+
+/* 加载状态 */
+.loading-container {
+  padding: 60rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid var(--primary-light);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--text-hint);
+}
+
+/* 对比结果页面 */
+.compare-container {
+  width: 100%;
+}
+
+.compare-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  margin-right: 20rpx;
+  color: var(--primary-color);
+  font-size: 28rpx;
+}
+
+.back-icon {
+  margin-right: 6rpx;
+  font-size: 32rpx;
+}
+
+/* 标签页 */
+.tab-container {
+  display: flex;
+  background-color: var(--surface-color);
+  border-radius: 12rpx;
+  margin-bottom: 30rpx;
+  overflow: hidden;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.tab-item.active {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 4rpx;
+  background-color: var(--primary-color);
+  border-radius: 4rpx;
+}
+
+/* 标签内容 */
+.tab-content {
+  width: 100%;
+  background-color: var(--surface-color);
+  border-radius: 12rpx;
+  padding: 30rpx 20rpx;
+  margin-bottom: 30rpx;
+}
+
+/* 概览页样式 */
+.config-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.config-card {
+  background-color: rgba(41, 41, 41, 0.6);
+  border-radius: 12rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.config-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.config-card-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.config-card-type {
+  font-size: 24rpx;
+  color: var(--text-hint);
+  background-color: rgba(255, 140, 0, 0.1);
+  padding: 6rpx 16rpx;
+  border-radius: 100rpx;
+}
+
+.config-card-price {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 30rpx;
+}
+
+/* 性能条 */
+.performance-bars {
+  margin: 20rpx 0 30rpx;
+}
+
+.performance-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.bar-label {
+  width: 160rpx;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+}
+
+.bar-container {
+  flex: 1;
+  height: 16rpx;
+  background-color: var(--border-color);
+  border-radius: 8rpx;
+  overflow: hidden;
+  margin: 0 20rpx;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 8rpx;
+}
+
+.bar-value {
+  width: 60rpx;
+  font-size: 26rpx;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+/* 关键组件 */
+.key-components {
+  border-top: 2rpx solid var(--border-color);
+  padding-top: 20rpx;
+}
+
+.key-component {
+  display: flex;
+  margin-bottom: 12rpx;
+}
+
+.key-component-label {
+  width: 100rpx;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+}
+
+.key-component-value {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+/* 性能对比标签页 */
+.comparison-table {
+  width: 100%;
+  margin-bottom: 30rpx;
+}
+
+.table-header {
+  display: flex;
+  background-color: rgba(41, 41, 41, 0.6);
+  padding: 20rpx 0;
+  border-radius: 12rpx 12rpx 0 0;
+}
+
+.table-cell {
+  padding: 16rpx;
+  font-size: 26rpx;
+  text-align: center;
+  word-break: break-all;
+}
+
+.metric-cell {
+  width: 25%;
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.config-cell {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.table-row {
+  display: flex;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.score-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.score-bar-container {
+  width: 80%;
+  height: 12rpx;
+  background-color: var(--border-color);
+  border-radius: 6rpx;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.score-bar {
+  height: 100%;
+  border-radius: 6rpx;
+}
+
+/* 性能描述 */
+.performance-description {
+  background-color: rgba(41, 41, 41, 0.6);
+  padding: 30rpx;
+  border-radius: 12rpx;
+}
+
+.description-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20rpx;
+}
+
+.description-content {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.value-analysis {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid var(--border-color);
+}
+
+/* 组件对比标签页 */
+.component-type-tabs {
+  margin-bottom: 30rpx;
+}
+
+.component-type-scroll {
+  white-space: nowrap;
+  width: 100%;
+}
+
+.component-type-item {
+  display: inline-block;
+  padding: 16rpx 30rpx;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  margin-right: 16rpx;
+  background-color: rgba(41, 41, 41, 0.6);
+  border-radius: 100rpx;
+  transition: all 0.3s ease;
+}
+
+.component-type-item.active {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+/* 组件对比表格 */
+.components-comparison {
+  width: 100%;
+}
+
+.components-table-header {
+  display: flex;
+  background-color: rgba(41, 41, 41, 0.6);
+  border-radius: 12rpx 12rpx 0 0;
+}
+
+.components-table-row {
+  display: flex;
+  border-bottom: 2rpx solid var(--border-color);
+}
+
+.components-table-row:last-child {
+  border-bottom: none;
+}
+
+.component-cell {
+  padding: 16rpx;
+  font-size: 26rpx;
+}
+
+.type-cell {
+  width: 20%;
+  color: var(--text-secondary);
+}
+
+.component-name {
+  font-size: 26rpx;
+  color: var(--text-primary);
+  margin-bottom: 6rpx;
+  word-break: break-all;
+}
+
+.component-specs {
+  font-size: 22rpx;
+  color: var(--text-hint);
+  margin-bottom: 8rpx;
+}
+
+.component-price {
+  font-size: 24rpx;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* 详细组件视图 */
+.components-detail-view {
+  width: 100%;
+}
+
+.components-detail-header {
+  display: flex;
+  background-color: rgba(41, 41, 41, 0.6);
+  padding: 16rpx 0;
+  border-radius: 12rpx 12rpx 0 0;
+}
+
+.detail-header-cell {
+  padding: 10rpx 16rpx;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.name-cell {
+  width: 35%;
+}
+
+.specs-cell {
+  width: 45%;
+}
+
+.price-cell {
+  width: 20%;
+  text-align: right;
+}
+
+.config-components-section {
+  margin-bottom: 30rpx;
+  border-bottom: 2rpx solid var(--border-color);
+  padding-bottom: 20rpx;
+}
+
+.config-components-section:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.config-components-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 20rpx 0 16rpx;
+}
+
+.component-detail-row {
+  display: flex;
+  background-color: rgba(41, 41, 41, 0.4);
+  border-radius: 8rpx;
+  margin-bottom: 10rpx;
+}
+
+.detail-cell {
+  padding: 16rpx;
+  font-size: 26rpx;
+  word-break: break-all;
+} 

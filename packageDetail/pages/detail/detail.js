@@ -28,7 +28,11 @@ Page({
       { id: 'wechat', name: '微信', icon: '/static/images/share/wechat.png' },
       { id: 'moments', name: '朋友圈', icon: '/static/images/share/moments.png' },
       { id: 'copy', name: '复制链接', icon: '/static/images/share/copy.png' }
-    ]
+    ],
+    
+    // 组件加载状态
+    componentsLoaded: false,
+    loadingComponents: false
   },
 
   /**
@@ -44,7 +48,7 @@ Page({
     
     this.setData({ configId })
     
-    // 加载配置详情
+    // 加载配置详情基本信息
     this.loadConfigData(configId)
     
     // 添加到浏览历史
@@ -94,7 +98,8 @@ Page({
         }
         
         console.log('成功加载临时预览配置:', configData);
-        this.processConfigData(configData);
+        // 处理临时预览配置（包含所有数据，直接完全处理）
+        this.processConfigData(configData, true);
       } else {
         // 从云数据库获取配置
         if (configId.startsWith('user_')) {
@@ -111,7 +116,8 @@ Page({
             if (res.result && res.result.success) {
               configData = res.result.data;
               console.log('从云数据库获取配置成功:', configData);
-              this.processConfigData(configData);
+              // 先处理基本数据，延迟加载组件详情
+              this.processConfigData(configData, false);
             } else {
               // 如果云函数获取失败，尝试从本地缓存获取
               console.log('从云数据库获取配置失败，尝试从本地获取');
@@ -119,7 +125,8 @@ Page({
               
               if (configData) {
                 console.log('从本地缓存获取配置成功:', configData);
-                this.processConfigData(configData);
+                // 先处理基本数据，延迟加载组件详情
+                this.processConfigData(configData, false);
               } else {
                 this.showError('未找到配置方案');
               }
@@ -134,7 +141,8 @@ Page({
             
             if (configData) {
               console.log('从本地缓存获取配置成功:', configData);
-              this.processConfigData(configData);
+              // 先处理基本数据，延迟加载组件详情
+              this.processConfigData(configData, false);
             } else {
               this.showError('未找到配置方案');
             }
@@ -145,7 +153,8 @@ Page({
           
           if (configData) {
             console.log('获取预设配置成功:', configData);
-            this.processConfigData(configData);
+            // 先处理基本数据，延迟加载组件详情
+            this.processConfigData(configData, false);
           } else {
             wx.hideLoading();
             this.showError('未找到配置方案');
@@ -161,8 +170,10 @@ Page({
 
   /**
    * 处理配置数据
+   * @param {Object} configData 配置数据
+   * @param {Boolean} loadAllComponents 是否立即加载所有组件详情
    */
-  processConfigData: function(configData) {
+  processConfigData: function(configData, loadAllComponents = false) {
     if (!configData) {
       this.showError('配置数据不存在');
       wx.hideLoading();
@@ -204,16 +215,61 @@ Page({
         gaming: '游戏性能',
         work: '工作性能',
         office: '办公性能'
-      }
+      },
+      // 设置组件加载状态
+      componentsLoaded: loadAllComponents
     });
     
     // 检查收藏状态
     this.checkFavoriteStatus();
     
-    console.log('配置数据加载成功');
+    // 如果指定立即加载所有组件详情，则不需要延迟加载
+    if (loadAllComponents) {
+      this.setData({
+        componentsLoaded: true
+      });
+    } else {
+      // 延迟加载组件详情（在基本信息显示后）
+      setTimeout(() => {
+        this.loadComponentDetails();
+      }, 500);
+    }
+    
+    console.log('配置基本数据加载成功');
     
     // 隐藏加载中
     wx.hideLoading();
+  },
+
+  /**
+   * 延迟加载组件详情数据
+   */
+  loadComponentDetails: function() {
+    const { configData, componentsLoaded } = this.data;
+    
+    // 如果已经加载过了或配置数据不存在，则返回
+    if (componentsLoaded || !configData) {
+      return;
+    }
+    
+    console.log('开始加载组件详情...');
+    this.setData({ loadingComponents: true });
+    
+    // 这里可以添加组件详情加载的逻辑
+    // 例如，如果组件有更多详细信息需要从云数据库获取
+    
+    // 模拟组件详情加载
+    setTimeout(() => {
+      // 在实际场景中，这里可能需要调用云函数获取更多组件详情
+      
+      // 标记组件详情已加载完成
+      this.setData({
+        componentsLoaded: true,
+        loadingComponents: false
+      });
+      
+      console.log('组件详情加载完成');
+    }, 300);
   },
 
   /**
@@ -248,7 +304,7 @@ Page({
       })
     }
     
-    // 更新状态
+    // 更新页面收藏状态
     this.setData({
       isFavorite: !isFavorite
     })

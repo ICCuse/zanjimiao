@@ -118,11 +118,11 @@ const evaluateRamPerformance = (ram, quantity = 1) => {
     score = 60;
   }
   
-  // 内存频率评分
-  if (name.includes('ddr5')) {
+  // 内存类型和频率评分
+  if (name.includes('ddr5') || name.includes('d5')) {
     score += 10;
     
-    // DDR5频率
+    // D5频率
     if (name.includes('6400') || name.includes('6000')) {
       score += 5;
     } else if (name.includes('5600') || name.includes('5200')) {
@@ -130,10 +130,10 @@ const evaluateRamPerformance = (ram, quantity = 1) => {
     } else if (name.includes('4800')) {
       score += 1;
     }
-  } else if (name.includes('ddr4')) {
+  } else if (name.includes('ddr4') || name.includes('d4')) {
     score += 5;
     
-    // DDR4频率
+    // D4频率
     if (name.includes('3600') || name.includes('3200')) {
       score += 3;
     } else if (name.includes('3000') || name.includes('2933')) {

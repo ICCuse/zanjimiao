@@ -216,4 +216,36 @@
   padding: 0 20rpx;
   font-size: 28rpx;
   color: #666;
+}
+
+/* 调试控制样式 */
+.debug-control {
+  background: #f8f8f8;
+  padding: 20rpx;
+  margin: 20rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+}
+
+.debug-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eee;
+}
+
+.debug-item:last-child {
+  border-bottom: none;
+}
+
+.debug-label {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.debug-info {
+  font-size: 24rpx;
+  color: #999;
+  padding-top: 20rpx;
 } 

@@ -1,7 +1,7 @@
-const cloud = require('wx-server-sdk')
+﻿const cloud = require('wx-server-sdk')
 
 cloud.init({
-  env: 'pcconfig-7grn6s1naf2b91d9'
+  env: 'your-cloud-env-id'
 })
 
 // 初始化云数据库

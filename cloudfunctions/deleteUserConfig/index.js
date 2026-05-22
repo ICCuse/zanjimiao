@@ -1,8 +1,8 @@
-// 云函数入口文件
+﻿// 云函数入口文件
 const cloud = require('wx-server-sdk')
 
 cloud.init({
-  env: 'pcconfig-7grn6s1naf2b91d9' // 使用正确的云环境ID
+  env: 'your-cloud-env-id' // 使用正确的云环境ID
 })
 
 const db = cloud.database()

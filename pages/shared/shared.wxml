@@ -1,0 +1,166 @@
+<!--pages/shared/shared.wxml-->
+<view class="config-shared">
+  <!-- 顶部操作栏 -->
+  <view class="action-bar">
+    <view class="action-btn back-btn" bindtap="goToConfig">首页</view>
+    <view class="action-btn import-btn" bindtap="importConfig">导入配置</view>
+    <view class="action-btn qrcode-btn" bindtap="onSaveImage">保存图片</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="wx-loading">
+      <view class="wx-loading-icon"></view>
+    </view>
+    <view class="loading-text">配置信息加载中...</view>
+  </view>
+
+  <!-- 错误提示 -->
+  <view class="error-container" wx:elif="{{error}}">
+    <view class="error-text">{{errorMsg}}</view>
+    <view class="retry-btn" bindtap="loadConfigData">重新加载</view>
+  </view>
+
+  <!-- 配置内容 -->
+  <block wx:elif="{{!loading && !error && config}}">
+    <!-- 配置基本信息 -->
+    <view class="config-container">
+      <view class="config-header">
+        <view class="config-title">{{config.title || '我的电脑配置'}}</view>
+        <view class="config-time">创建于: {{config.createdAt}}</view>
+      </view>
+      
+      <view class="price-info">
+        <view class="total-price-label">总价：</view>
+        <view class="total-price-value">¥{{totalPrice}}</view>
+      </view>
+
+      <!-- 组件列表 -->
+      <view class="components-table">
+        <view class="table-header">
+          <view class="table-cell cell-type">类型</view>
+          <view class="table-cell cell-name">名称</view>
+          <view class="table-cell cell-spec">规格</view>
+          <view class="table-cell cell-price">价格</view>
+        </view>
+
+        <!-- CPU -->
+        <view class="table-row" wx:if="{{config.cpu}}">
+          <view class="table-cell cell-type">处理器</view>
+          <view class="table-cell cell-name">{{config.cpu.name}}</view>
+          <view class="table-cell cell-spec">{{config.cpu.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.cpu.price}}</view>
+        </view>
+
+        <!-- 主板 -->
+        <view class="table-row" wx:if="{{config.motherboard}}">
+          <view class="table-cell cell-type">主板</view>
+          <view class="table-cell cell-name">{{config.motherboard.name}}</view>
+          <view class="table-cell cell-spec">{{config.motherboard.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.motherboard.price}}</view>
+        </view>
+
+        <!-- 内存 -->
+        <view class="table-row" wx:if="{{config.memory}}">
+          <view class="table-cell cell-type">内存</view>
+          <view class="table-cell cell-name">{{config.memory.name}}</view>
+          <view class="table-cell cell-spec">{{config.memory.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.memory.price}}</view>
+        </view>
+
+        <!-- 显卡 -->
+        <view class="table-row" wx:if="{{config.gpu}}">
+          <view class="table-cell cell-type">显卡</view>
+          <view class="table-cell cell-name">{{config.gpu.name}}</view>
+          <view class="table-cell cell-spec">{{config.gpu.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.gpu.price}}</view>
+        </view>
+
+        <!-- 固态硬盘 -->
+        <view class="table-row" wx:if="{{config.ssd}}">
+          <view class="table-cell cell-type">固态硬盘</view>
+          <view class="table-cell cell-name">{{config.ssd.name}}</view>
+          <view class="table-cell cell-spec">{{config.ssd.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.ssd.price}}</view>
+        </view>
+
+        <!-- 机械硬盘 -->
+        <view class="table-row" wx:if="{{config.hdd}}">
+          <view class="table-cell cell-type">机械硬盘</view>
+          <view class="table-cell cell-name">{{config.hdd.name}}</view>
+          <view class="table-cell cell-spec">{{config.hdd.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.hdd.price}}</view>
+        </view>
+
+        <!-- 电源 -->
+        <view class="table-row" wx:if="{{config.powerSupply}}">
+          <view class="table-cell cell-type">电源</view>
+          <view class="table-cell cell-name">{{config.powerSupply.name}}</view>
+          <view class="table-cell cell-spec">{{config.powerSupply.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.powerSupply.price}}</view>
+        </view>
+
+        <!-- 机箱 -->
+        <view class="table-row" wx:if="{{config.case}}">
+          <view class="table-cell cell-type">机箱</view>
+          <view class="table-cell cell-name">{{config.case.name}}</view>
+          <view class="table-cell cell-spec">{{config.case.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.case.price}}</view>
+        </view>
+
+        <!-- CPU散热 -->
+        <view class="table-row" wx:if="{{config.cooling}}">
+          <view class="table-cell cell-type">CPU散热</view>
+          <view class="table-cell cell-name">{{config.cooling.name}}</view>
+          <view class="table-cell cell-spec">{{config.cooling.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.cooling.price}}</view>
+        </view>
+
+        <!-- 机箱散热 -->
+        <view class="table-row" wx:if="{{config.caseFan}}">
+          <view class="table-cell cell-type">机箱散热</view>
+          <view class="table-cell cell-name">{{config.caseFan.name}}</view>
+          <view class="table-cell cell-spec">{{config.caseFan.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.caseFan.price}}</view>
+        </view>
+
+        <!-- 显示器 -->
+        <view class="table-row" wx:if="{{config.monitor}}">
+          <view class="table-cell cell-type">显示器</view>
+          <view class="table-cell cell-name">{{config.monitor.name}}</view>
+          <view class="table-cell cell-spec">{{config.monitor.spec || ''}}</view>
+          <view class="table-cell cell-price">¥{{config.monitor.price}}</view>
+        </view>
+
+        <!-- 没有任何组件 -->
+        <view class="no-component" wx:if="{{!hasAnyComponent}}">
+          暂无配置信息
+        </view>
+      </view>
+    </view>
+
+    <!-- 备注区域 -->
+    <view class="notes-section" wx:if="{{config}}">
+      <view class="notes-title">配置备注</view>
+      <view class="notes-content" wx:if="{{config.notes}}">{{config.notes}}</view>
+      <view class="empty-notes" wx:else>暂无备注信息</view>
+    </view>
+
+    <!-- 二维码区域 -->
+    <view class="qrcode-section">
+      <view class="qrcode-title">分享配置</view>
+      <image class="qrcode-image" src="{{qrCodePath}}" wx:if="{{qrCodePath}}"></image>
+      <view class="qrcode-tip">扫描二维码查看此配置</view>
+    </view>
+
+    <!-- 页脚 -->
+    <view class="footer">
+      <view class="brand">电脑硬件配置助手</view>
+      <view class="slogan">专业的DIY装机配置工具</view>
+      <button class="share-btn" open-type="share">分享给好友</button>
+    </view>
+  </block>
+</view>
+
+<!-- 用于生成分享图片的画布 -->
+<canvas canvas-id="shareCanvas" class="share-canvas"></canvas> 

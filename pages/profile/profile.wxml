@@ -180,6 +180,10 @@
         <view class="settings-item-name">关于我们</view>
         <view class="arrow-icon">></view>
       </view>
+      <view class="settings-item flex-row justify-between align-center" bindtap="clearConfigCache">
+        <view class="settings-item-name">清除配置缓存</view>
+        <view class="arrow-icon">></view>
+      </view>
       <view class="settings-item flex-row justify-between align-center" bindtap="initComponentsData">
         <view class="settings-item-name">初始化组件数据</view>
         <view class="arrow-icon">></view>

@@ -42,6 +42,31 @@
           data-category="power">电源</view>
   </view>
 
+  <!-- 日志控制部分 -->
+  <view class="section-title">调试日志控制</view>
+  <view class="debug-control">
+    <view class="debug-item">
+      <text class="debug-label">兼容性检查日志</text>
+      <switch checked="{{debugMode.compatibilityLog}}" bindchange="toggleDebugMode" data-type="compatibilityLog" color="#007aff"/>
+    </view>
+    <view class="debug-item">
+      <text class="debug-label">网络请求日志</text>
+      <switch checked="{{debugMode.networkLog}}" bindchange="toggleDebugMode" data-type="networkLog" color="#007aff"/>
+    </view>
+    <view class="debug-item">
+      <text class="debug-label">性能测试日志</text>
+      <switch checked="{{debugMode.performanceLog}}" bindchange="toggleDebugMode" data-type="performanceLog" color="#007aff"/>
+    </view>
+    <view class="debug-item">
+      <text class="debug-label">散热组件筛选日志</text>
+      <switch checked="{{debugMode.coolingDebug}}" bindchange="toggleDebugMode" data-type="coolingDebug" color="#ff8c00"/>
+    </view>
+    
+    <view class="debug-info">
+      <text>说明: 开启日志会在控制台输出详细信息，可用于调试，但可能影响性能</text>
+    </view>
+  </view>
+
   <!-- 数据导入部分 -->
   <view class="section-title">数据导入</view>
   <view class="import-area">

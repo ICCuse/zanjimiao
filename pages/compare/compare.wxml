@@ -1,0 +1,457 @@
+<!--pages/compare/compare.wxml-->
+<view class="container">
+  <!-- 选择配置页面 -->
+  <view class="selection-container" wx:if="{{!showCompareResult}}">
+    <view class="page-header">
+      <view class="page-title">配置对比</view>
+      <view class="subtitle">选择2-3个配置方案进行对比分析</view>
+    </view>
+    
+    <!-- 已选配置提示 -->
+    <view class="selection-info">
+      <view class="selection-count">已选择 {{selectedConfigs.length}}/{{maxSelections}} 个配置</view>
+      <view class="selection-hint" wx:if="{{selectedConfigs.length < 2}}">至少选择2个配置才能进行对比</view>
+    </view>
+    
+    <!-- 选择按钮 -->
+    <view class="action-button-container">
+      <button class="btn btn-primary" bindtap="startCompare" disabled="{{selectedConfigs.length < 2}}">
+        开始对比
+      </button>
+    </view>
+    
+    <!-- 配置列表区域 -->
+    <view class="config-list-container">
+      <!-- 我的配置 -->
+      <view class="section-title">我的配置</view>
+      <view class="config-list" wx:if="{{!loading && userConfigs.length > 0}}">
+        <view class="config-item {{item.checked ? 'selected' : ''}}" 
+              wx:for="{{userConfigs}}" 
+              wx:key="id"
+              bindtap="toggleConfigSelection"
+              data-id="{{item.id}}"
+              data-type="user">
+          <view class="config-checkbox">
+            <view class="checkbox {{item.checked ? 'checked' : ''}}"></view>
+          </view>
+          <view class="config-content">
+            <view class="config-name">{{item.name || '未命名配置'}}</view>
+            <view class="config-details">
+              <text class="config-date">{{item.createdAt || '未知时间'}}</text>
+              <text class="config-price">¥{{item.totalPrice || 0}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="empty-tip" wx:if="{{!loading && userConfigs.length === 0}}">
+        你还没有创建任何配置
+      </view>
+      
+      <!-- 预设配置 -->
+      <view class="section-title">预设配置</view>
+      <view class="config-list" wx:if="{{!loading && presetConfigs.length > 0}}">
+        <view class="config-item {{item.checked ? 'selected' : ''}}" 
+              wx:for="{{presetConfigs}}" 
+              wx:key="id"
+              bindtap="toggleConfigSelection"
+              data-id="{{item.id}}"
+              data-type="preset">
+          <view class="config-checkbox">
+            <view class="checkbox {{item.checked ? 'checked' : ''}}"></view>
+          </view>
+          <view class="config-content">
+            <view class="config-name">{{item.name || '未命名配置'}}</view>
+            <view class="config-details">
+              <text class="config-type">预设方案</text>
+              <text class="config-price">¥{{item.totalPrice || 0}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="empty-tip" wx:if="{{!loading && presetConfigs.length === 0}}">
+        暂无预设配置方案
+      </view>
+      
+      <!-- 加载状态 -->
+      <view class="loading-container" wx:if="{{loading}}">
+        <view class="loading-icon"></view>
+        <view class="loading-text">加载配置中...</view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 对比结果页面 -->
+  <view class="compare-container" wx:if="{{showCompareResult}}">
+    <!-- 顶部操作栏 -->
+    <view class="compare-header">
+      <view class="page-title">配置对比结果</view>
+    </view>
+    
+    <!-- 标签页切换 -->
+    <view class="tab-container">
+      <view class="tab-item {{currentTab === 'overview' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="overview">概览</view>
+      <view class="tab-item {{currentTab === 'performance' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="performance">性能对比</view>
+      <view class="tab-item {{currentTab === 'components' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="components">配件对比</view>
+    </view>
+    
+    <!-- 概览标签页 -->
+    <view class="tab-content" wx:if="{{currentTab === 'overview'}}">
+      <view class="overview-container">
+        <!-- 配置卡片 -->
+        <view class="config-cards">
+          <view class="config-card" wx:for="{{selectedConfigs}}" wx:key="id">
+            <view class="config-card-header">
+              <view class="config-card-name">{{item.name || '未命名配置'}}</view>
+              <view class="config-card-type">{{item.type === 'user' ? '我的配置' : '预设方案'}}</view>
+            </view>
+            <view class="config-card-price">¥{{item.totalPrice || 0}}</view>
+            
+            <!-- 性能雷达图(简化为评分条) -->
+            <view class="performance-bars">
+              <view class="performance-bar">
+                <view class="bar-label">总体评分</view>
+                <view class="bar-container">
+                  <view class="bar-fill" style="width: {{item.performanceScores.totalScore}}%; background-color: {{themeColor}}"></view>
+                </view>
+                <view class="bar-value">{{item.performanceScores.totalScore}}</view>
+              </view>
+              <view class="performance-bar">
+                <view class="bar-label">游戏性能</view>
+                <view class="bar-container">
+                  <view class="bar-fill" style="width: {{item.performanceScores.gamingScore}}%; background-color: {{themeColor}}"></view>
+                </view>
+                <view class="bar-value">{{item.performanceScores.gamingScore}}</view>
+              </view>
+              <view class="performance-bar">
+                <view class="bar-label">工作性能</view>
+                <view class="bar-container">
+                  <view class="bar-fill" style="width: {{item.performanceScores.workScore}}%; background-color: {{themeColor}}"></view>
+                </view>
+                <view class="bar-value">{{item.performanceScores.workScore}}</view>
+              </view>
+              <view class="performance-bar">
+                <view class="bar-label">性价比</view>
+                <view class="bar-container">
+                  <view class="bar-fill" style="width: {{item.performanceScores.valueScore > 100 ? 100 : item.performanceScores.valueScore}}%; background-color: {{themeColor}}"></view>
+                </view>
+                <view class="bar-value">{{item.performanceScores.valueScore}}</view>
+              </view>
+            </view>
+            
+            <!-- 关键组件 -->
+            <view class="key-components">
+              <view class="key-component">
+                <view class="key-component-label">CPU</view>
+                <view class="key-component-value">{{item.components.cpu.name || '未选择'}}</view>
+              </view>
+              <view class="key-component">
+                <view class="key-component-label">显卡</view>
+                <view class="key-component-value">{{item.components.gpu.name || '未选择'}}</view>
+              </view>
+              <view class="key-component">
+                <view class="key-component-label">内存</view>
+                <view class="key-component-value">{{item.components.ram.name || '未选择'}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 性能对比标签页 -->
+    <view class="tab-content" wx:if="{{currentTab === 'performance'}}">
+      <view class="performance-container">
+        <!-- 对比表格 -->
+        <view class="comparison-table">
+          <!-- 表头 -->
+          <view class="table-header">
+            <view class="table-cell metric-cell">评分指标</view>
+            <view class="table-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              {{item.name || '配置' + (index + 1)}}
+            </view>
+          </view>
+          
+          <!-- 表格内容 -->
+          <view class="table-row" wx:for="{{performanceMetrics}}" wx:key="id" wx:for-item="metric">
+            <view class="table-cell metric-cell">{{metric.name}}</view>
+            <view class="table-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id" wx:for-index="configIndex">
+              <!-- 显示评分 -->
+              <view class="score-value" style="color: {{themeColor}}">
+                {{selectedConfigs[configIndex].performanceScores[metric.id]}}
+              </view>
+              <!-- 显示评分条 -->
+              <view class="score-bar-container">
+                <view class="score-bar" style="width: {{metric.id === 'valueScore' ? (selectedConfigs[configIndex].performanceScores[metric.id] > 100 ? 100 : selectedConfigs[configIndex].performanceScores[metric.id]) : selectedConfigs[configIndex].performanceScores[metric.id]}}%; background-color: {{themeColor}}"></view>
+              </view>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 性能描述 -->
+        <view class="performance-description">
+          <view class="description-title">性能分析</view>
+          <view class="description-content">
+            <!-- 简单的性能分析逻辑 -->
+            <block wx:if="{{selectedConfigs.length === 2}}">
+              <view wx:if="{{selectedConfigs[0].performanceScores.totalScore > selectedConfigs[1].performanceScores.totalScore + 10}}">
+                {{selectedConfigs[0].name}} 的整体性能明显优于 {{selectedConfigs[1].name}}，特别是在
+                <text wx:if="{{selectedConfigs[0].performanceScores.gamingScore > selectedConfigs[1].performanceScores.gamingScore + 10}}">游戏性能</text>
+                <text wx:if="{{selectedConfigs[0].performanceScores.workScore > selectedConfigs[1].performanceScores.workScore + 10}}">工作性能</text>
+                方面。
+              </view>
+              <view wx:elif="{{selectedConfigs[1].performanceScores.totalScore > selectedConfigs[0].performanceScores.totalScore + 10}}">
+                {{selectedConfigs[1].name}} 的整体性能明显优于 {{selectedConfigs[0].name}}，特别是在
+                <text wx:if="{{selectedConfigs[1].performanceScores.gamingScore > selectedConfigs[0].performanceScores.gamingScore + 10}}">游戏性能</text>
+                <text wx:if="{{selectedConfigs[1].performanceScores.workScore > selectedConfigs[0].performanceScores.workScore + 10}}">工作性能</text>
+                方面。
+              </view>
+              <view wx:else>
+                两款配置的整体性能相当，差异不大。
+              </view>
+              
+              <!-- 性价比分析 -->
+              <view class="value-analysis">
+                <view wx:if="{{selectedConfigs[0].performanceScores.valueScore > selectedConfigs[1].performanceScores.valueScore + 10}}">
+                  从性价比来看，{{selectedConfigs[0].name}} 更具优势。
+                </view>
+                <view wx:elif="{{selectedConfigs[1].performanceScores.valueScore > selectedConfigs[0].performanceScores.valueScore + 10}}">
+                  从性价比来看，{{selectedConfigs[1].name}} 更具优势。
+                </view>
+                <view wx:else>
+                  两款配置的性价比相当。
+                </view>
+              </view>
+            </block>
+            
+            <block wx:if="{{selectedConfigs.length === 3}}">
+              <!-- 三个配置的对比逻辑，找出最佳和最差的配置 -->
+              <view>对比三款配置方案：</view>
+              <view>
+                性能最佳：
+                <text wx:if="{{selectedConfigs[0].performanceScores.totalScore >= selectedConfigs[1].performanceScores.totalScore && selectedConfigs[0].performanceScores.totalScore >= selectedConfigs[2].performanceScores.totalScore}}">
+                  {{selectedConfigs[0].name}}
+                </text>
+                <text wx:elif="{{selectedConfigs[1].performanceScores.totalScore >= selectedConfigs[0].performanceScores.totalScore && selectedConfigs[1].performanceScores.totalScore >= selectedConfigs[2].performanceScores.totalScore}}">
+                  {{selectedConfigs[1].name}}
+                </text>
+                <text wx:else>
+                  {{selectedConfigs[2].name}}
+                </text>
+              </view>
+              <view>
+                性价比最佳：
+                <text wx:if="{{selectedConfigs[0].performanceScores.valueScore >= selectedConfigs[1].performanceScores.valueScore && selectedConfigs[0].performanceScores.valueScore >= selectedConfigs[2].performanceScores.valueScore}}">
+                  {{selectedConfigs[0].name}}
+                </text>
+                <text wx:elif="{{selectedConfigs[1].performanceScores.valueScore >= selectedConfigs[0].performanceScores.valueScore && selectedConfigs[1].performanceScores.valueScore >= selectedConfigs[2].performanceScores.valueScore}}">
+                  {{selectedConfigs[1].name}}
+                </text>
+                <text wx:else>
+                  {{selectedConfigs[2].name}}
+                </text>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 配件对比标签页 -->
+    <view class="tab-content" wx:if="{{currentTab === 'components'}}">
+      <!-- 组件类型选择 -->
+      <view class="component-type-tabs">
+        <scroll-view scroll-x="true" class="component-type-scroll">
+          <view class="component-type-item {{currentComponent === item.id ? 'active' : ''}}"
+                wx:for="{{componentTypes}}" 
+                wx:key="id"
+                bindtap="switchComponentType"
+                data-type="{{item.id}}">
+            {{item.name}}
+          </view>
+        </scroll-view>
+      </view>
+      
+      <!-- 组件对比表格 -->
+      <view class="components-comparison">
+        <!-- 表头 -->
+        <view class="components-table-header">
+          <view class="component-cell type-cell">组件类型</view>
+          <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+            {{item.name || '配置' + (index + 1)}}
+          </view>
+        </view>
+        
+        <!-- 全部组件 -->
+        <block wx:if="{{currentComponent === 'all'}}">
+          <!-- CPU行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">CPU</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.cpu.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.cpu.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.cpu.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 主板行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">主板</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.motherboard.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.motherboard.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.motherboard.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 内存行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">内存</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.ram.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.ram.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.ram.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 显卡行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">显卡</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.gpu.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.gpu.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.gpu.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 存储行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">存储</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.storage.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.storage.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.storage.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 电源行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">电源</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.psu.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.psu.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.psu.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 机箱行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">机箱</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.case.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.case.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.case.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 散热行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">散热器</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.cooling.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.cooling.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.cooling.price || 0}}</view>
+            </view>
+          </view>
+          
+          <!-- 显示器行 -->
+          <view class="components-table-row">
+            <view class="component-cell type-cell">显示器</view>
+            <view class="component-cell config-cell" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="component-name">{{item.components.monitor.name || '未选择'}}</view>
+              <view class="component-specs">
+                <block wx:for="{{item.components.monitor.specs}}" wx:for-item="spec" wx:key="label">
+                  <text wx:if="{{index < 3}}">{{spec.value}} </text>
+                </block>
+              </view>
+              <view class="component-price">¥{{item.components.monitor.price || 0}}</view>
+            </view>
+          </view>
+        </block>
+        
+        <!-- 特定组件类型 -->
+        <block wx:else>
+          <view class="components-detail-view">
+            <view class="components-detail-header">
+              <view class="detail-header-cell name-cell">组件名称</view>
+              <view class="detail-header-cell specs-cell">主要规格</view>
+              <view class="detail-header-cell price-cell">价格</view>
+            </view>
+            
+            <!-- 每个配置的组件详情 -->
+            <view class="config-components-section" wx:for="{{selectedConfigs}}" wx:key="id">
+              <view class="config-components-title">{{item.name || '配置' + (index + 1)}}</view>
+              
+              <!-- 组件详情 -->
+              <view class="component-detail-row">
+                <view class="detail-cell name-cell">
+                  {{item.components[currentComponent] ? item.components[currentComponent].name : '未选择'}}
+                </view>
+                <view class="detail-cell specs-cell">
+                  <!-- 显示组件规格 -->
+                  <block wx:if="{{item.components[currentComponent] && item.components[currentComponent].specs}}">
+                    <view wx:for="{{item.components[currentComponent].specs}}" wx:for-item="spec" wx:key="label" class="spec-item">
+                      <text class="spec-label">{{spec.label}}:</text>
+                      <text class="spec-value">{{spec.value}}</text>
+                    </view>
+                  </block>
+                  <view wx:else>无规格数据</view>
+                </view>
+                <view class="detail-cell price-cell">
+                  ¥{{item.components[currentComponent] ? item.components[currentComponent].price : 0}}
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>
+</view> 

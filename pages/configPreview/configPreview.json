@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "配置预览",
+  "navigationBarBackgroundColor": "#1a1a1a",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#1a1a1a",
+  "enablePullDownRefresh": false
+} 

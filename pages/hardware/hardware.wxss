@@ -1,0 +1,142 @@
+/**pages/hardware/hardware.wxss**/
+page {
+  --primary-color: #ff8c00;
+  --primary-light: #ffaf4d;
+  --primary-dark: #cc7000;
+  --background-color: #1a1a1a;
+  --surface-color: #292929;
+  --on-surface-color: #ffffff;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-hint: #999999;
+  --border-color: #333333;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  height: 100%;
+}
+
+.guide-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.swiper {
+  flex: 1;
+  height: 80vh;
+}
+
+.slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx;
+  height: 100%;
+}
+
+.slide-img {
+  width: 70%;
+  max-width: 300rpx;
+  height: 300rpx;
+  margin-bottom: 40rpx;
+}
+
+.slide-title {
+  font-size: 48rpx;
+  font-weight: 600;
+  margin-bottom: 30rpx;
+  text-align: center;
+}
+
+.slide-desc {
+  font-size: 32rpx;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 80%;
+  margin-bottom: 40rpx;
+}
+
+.indicators {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.indicator {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background-color: var(--text-hint);
+  margin: 0 8rpx;
+  transition: all 0.3s;
+}
+
+.indicator.active {
+  width: 40rpx;
+  border-radius: 8rpx;
+  background-color: var(--primary-color);
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  padding: 40rpx;
+  gap: 30rpx;
+}
+
+.btn {
+  padding: 24rpx 60rpx;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-skip {
+  background-color: transparent;
+  color: var(--text-secondary);
+}
+
+.logo {
+  width: 200rpx;
+  height: 200rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40rpx;
+}
+
+.logo-circle {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-text {
+  color: white;
+  font-size: 56rpx;
+  font-weight: bold;
+}
+
+/* 动画效果 */
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-20rpx); }
+  100% { transform: translateY(0); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+} 

@@ -1,0 +1,9 @@
+{
+  "usingComponents": {},
+  "navigationBarBackgroundColor": "#1a1a1a",
+  "navigationBarTextStyle": "white",
+  "navigationBarTitleText": "台式电脑配置助手",
+  "backgroundColor": "#1a1a1a",
+  "backgroundTextStyle": "light",
+  "disableScroll": true
+} 

@@ -3,16 +3,6 @@
   <!-- 头部导航 -->
   <view class="header">
     <view class="page-title">配置方案</view>
-    
-    <!-- 搜索框(暂不实现) -->
-    <!--
-    <view class="search-wrapper">
-      <view class="search-box">
-        <text class="search-icon">🔍</text>
-        <input class="search-input" placeholder="搜索配置方案" confirm-type="search" />
-      </view>
-    </view>
-    -->
   </view>
 
   <!-- 筛选和排序栏 -->

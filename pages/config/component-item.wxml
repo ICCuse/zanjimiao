@@ -1,0 +1,9 @@
+<view class="component-item-body">
+  <view wx:for="{{component.specs}}" wx:key="index" class="spec-item">
+    <!-- 过滤掉已经在其他地方显示的信息 -->
+    <block wx:if="{{item.label !== '品牌' && item.label !== '名称' && item.label !== '型号' && item.label !== '价格'}}">
+      <text class="spec-label">{{item.label}}:</text>
+      <text class="spec-value">{{item.value}}</text>
+    </block>
+  </view>
+</view> 

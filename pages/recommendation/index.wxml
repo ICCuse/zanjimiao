@@ -1,0 +1,77 @@
+<!--pages/recommendation/index.wxml-->
+<view class="recommendation-container">
+  <view class="header">
+    <view class="title">配置生成</view>
+    <view class="subtitle">告诉我们您的需求，获取定制化配置方案</view>
+  </view>
+  
+  <!-- 用途选择 -->
+  <view class="section">
+    <view class="section-title">您的主要用途</view>
+    <view class="purpose-selector">
+      <view class="purpose-option {{selectedPurposeIndex === index ? 'active' : ''}}" 
+            wx:for="{{purposeOptions}}" 
+            wx:key="value"
+            bindtap="selectPurpose"
+            data-index="{{index}}">
+        <view class="purpose-icon icon-{{item.icon}}"></view>
+        <view class="purpose-label">{{item.label}}</view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 预算选择 -->
+  <view class="section">
+    <view class="section-title">您的预算范围</view>
+    <view class="budget-selector">
+      <view class="budget-option {{selectedBudgetIndex === index ? 'active' : ''}}" 
+            wx:for="{{budgetRanges}}" 
+            wx:key="value"
+            bindtap="selectBudget"
+            data-index="{{index}}">
+        <view class="budget-label">{{item.label}}</view>
+        <view class="budget-desc">{{item.desc}}</view>
+      </view>
+    </view>
+    
+    <!-- 自定义预算滑块 -->
+    <view class="custom-budget">
+      <view class="budget-value">¥{{userPreference.budget}}</view>
+      <slider min="2000" max="30000" step="500" 
+              value="{{userPreference.budget}}"
+              activeColor="#ff8c00" 
+              block-color="#ff8c00"
+              block-size="24"
+              bindchange="budgetSliderChange" />
+    </view>
+  </view>
+  
+  <!-- 优先级选择 -->
+  <view class="section">
+    <view class="section-title">您的偏好</view>
+    <view class="priority-selector">
+      <view class="priority-option {{selectedPriorityIndex === index ? 'active' : ''}}" 
+            wx:for="{{priorityOptions}}" 
+            wx:key="value"
+            bindtap="selectPriority"
+            data-index="{{index}}">
+        <view class="priority-label">{{item.label}}</view>
+        <view class="priority-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 提交按钮 -->
+  <view class="action-section">
+    <button class="recommend-btn {{isLoading ? 'loading' : ''}}" 
+            bindtap="getRecommendation" 
+            disabled="{{isLoading}}">
+      {{isLoading ? '正在生成方案...' : '获取推荐方案'}}
+    </button>
+  </view>
+  
+  <!-- 底部说明 -->
+  <view class="recommendation-notice">
+    <text>我们会基于您的需求和现有组件库，智能匹配最适合您的电脑配置</text>
+  </view>
+</view> 

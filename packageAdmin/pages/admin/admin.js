@@ -12,11 +12,20 @@ Page({
     collectionName: 'components',
     jsonData: '',
     // 批量SKU关联相关
-    skuMapping: ''
+    skuMapping: '',
+    // 调试模式开关
+    debugMode: {
+      compatibilityLog: false,
+      networkLog: false,
+      performanceLog: false,
+      coolingDebug: false    // 添加散热组件筛选日志开关
+    }
     // JD API配置相关 - 已删除
   },
 
   onLoad: function (options) {
+    // 加载调试模式设置
+    this.loadDebugModeSettings();
     this.loadComponents()
   },
 
@@ -454,4 +463,31 @@ Page({
   },
 
   // 已删除JD API配置相关函数
+
+  // 加载调试模式设置
+  loadDebugModeSettings: function() {
+    const app = getApp();
+    const debugMode = app.getDebugMode();
+    this.setData({ debugMode });
+  },
+
+  // 切换调试模式
+  toggleDebugMode: function(e) {
+    const type = e.currentTarget.dataset.type;
+    const value = e.detail.value;
+    
+    const app = getApp();
+    app.setDebugMode(type, value);
+    
+    // 更新本地状态
+    const debugMode = this.data.debugMode;
+    debugMode[type] = value;
+    this.setData({ debugMode });
+    
+    // 显示提示
+    wx.showToast({
+      title: value ? '已开启日志' : '已关闭日志',
+      icon: 'success'
+    });
+  },
 }) 

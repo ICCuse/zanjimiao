@@ -1,8 +1,8 @@
-const cloud = require('wx-server-sdk')
+﻿const cloud = require('wx-server-sdk')
 const crypto = require('crypto')
 const templates = require('./template')
 
-cloud.init({ env: 'pcconfig-7grn6s1naf2b91d9' })
+cloud.init({ env: 'your-cloud-env-id' })
 const db = cloud.database()
 const _ = db.command
 const DEFAULT_ADMIN = {

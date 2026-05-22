@@ -40,6 +40,9 @@ Page({
       // 使用完参数后清除存储
       wx.removeStorageSync('profile_params')
     }
+    
+    // 清理无效ID的配置
+    this.cleanInvalidConfigs()
   },
   
   onShow() {
@@ -68,6 +71,32 @@ Page({
         
         // 保存用户信息到本地
         wx.setStorageSync('userInfo', res.userInfo)
+        
+        // 检查是否有需要返回的页面
+        const redirectPath = wx.getStorageSync('login_redirect')
+        if (redirectPath) {
+          // 清除存储
+          wx.removeStorageSync('login_redirect')
+          
+          // 返回到原页面
+          console.log('登录成功，跳转回:', redirectPath)
+          wx.navigateTo({
+            url: '/' + redirectPath,
+            success: () => {
+              console.log('成功跳转回原页面')
+            },
+            fail: (err) => {
+              console.error('跳转失败:', err)
+              // 如果navigateTo失败，尝试switchTab（如果是tabBar页面）
+              wx.switchTab({
+                url: '/' + redirectPath,
+                fail: (err) => {
+                  console.error('switchTab也失败:', err)
+                }
+              })
+            }
+          })
+        }
       }
     })
   },
@@ -140,17 +169,53 @@ Page({
       .then(userConfigs => {
         console.log('获取到的用户配置:', userConfigs);
         
+        // 过滤掉没有有效ID的配置
+        const validUserConfigs = userConfigs.filter(config => config.id);
+        
+        console.log('有效的用户配置:', validUserConfigs.length);
+        
         // 格式化用户配置
-        const formattedUserConfigs = userConfigs.map(config => {
+        const formattedUserConfigs = validUserConfigs.map(config => {
+          // 确保有一个默认的性能对象，防止显示[object Object]
+          let performanceObj = config.performance;
+          
+          // 如果性能对象不存在或不完整，使用评估函数生成
+          if (!performanceObj || typeof performanceObj !== 'object' || !performanceObj.overall) {
+            performanceObj = app.evaluatePerformance(config) || {
+              overall: 75, // 默认性能得分
+              gaming: 70,
+              work: 70,
+              office: 85
+            };
+          }
+          
+          // 处理日期
+          let dateValue = config.createTime || Date.now();
+          // 如果是Date对象或字符串，转换为时间戳
+          if (dateValue instanceof Date) {
+            dateValue = dateValue.getTime();
+          } else if (typeof dateValue === 'string') {
+            // 尝试将字符串解析为日期
+            try {
+              dateValue = new Date(dateValue).getTime();
+            } catch (e) {
+              console.error('日期解析失败:', e);
+              dateValue = Date.now();
+            }
+          }
+          
           return {
             id: config.id,
-            name: config.name,
+            name: config.name || '未命名配置',
             desc: config.desc || '自定义配置',
-            totalPrice: config.totalPrice,
-            date: config.createTime || Date.now(),
-            performance: config.performance || app.evaluatePerformance(config)
-          }
+            totalPrice: Number(config.totalPrice) || 0,
+            date: this.formatDate(dateValue),
+            performance: performanceObj,
+            components: config.components || {}
+          };
         });
+        
+        console.log('格式化后的配置:', formattedUserConfigs);
         
         // 更新用户配置数据
         this.setData({
@@ -235,7 +300,13 @@ Page({
   deleteConfig: function(e) {
     const configId = e.currentTarget.dataset.id
     
-    if (!configId) return
+    if (!configId) {
+      wx.showToast({
+        title: '配置ID无效',
+        icon: 'none'
+      })
+      return
+    }
     
     wx.showModal({
       title: '确认删除',
@@ -249,11 +320,12 @@ Page({
           
           // 调用云函数删除配置
           app.deleteUserConfig(configId)
-            .then(() => {
+            .then((result) => {
               wx.hideLoading()
               
+              // 显示操作结果
               wx.showToast({
-                title: '删除成功',
+                title: result.message || '删除成功',
                 icon: 'success'
               })
               
@@ -263,12 +335,12 @@ Page({
             .catch(err => {
               wx.hideLoading()
               
+              console.error('删除配置失败:', err)
+              
               wx.showToast({
-                title: '删除失败',
+                title: err.message || '删除失败',
                 icon: 'none'
               })
-              
-              console.error('删除配置失败:', err)
             })
         }
       }
@@ -430,5 +502,31 @@ Page({
         }
       }
     });
+  },
+
+  // 清除配置缓存
+  clearConfigCache: function() {
+    wx.showModal({
+      title: '清除缓存',
+      content: '确定要清除本地配置缓存吗？这可能有助于解决数据显示问题',
+      success: (res) => {
+        if (res.confirm) {
+          app.clearUserConfigsCache()
+          
+          wx.showToast({
+            title: '缓存已清除',
+            icon: 'success'
+          })
+          
+          // 重新加载数据
+          this.loadUserData()
+        }
+      }
+    })
+  },
+
+  // 清理无效ID的配置
+  cleanInvalidConfigs() {
+    app.removeLocalUserConfig('', true)
   }
 }) 

@@ -38,6 +38,9 @@
       <view class="chip {{selectedItems.cooling ? 'selected' : ''}}" bindtap="switchComponent" data-type="cooling">
         散热 {{selectedItems.cooling ? (selectedItems.cooling.quantity > 1 ? '✓×'+selectedItems.cooling.quantity : '✓') : ''}}
       </view>
+      <view class="chip {{selectedItems.caseFan ? 'selected' : ''}}" bindtap="switchComponent" data-type="caseFan">
+        机箱散热 {{selectedItems.caseFan ? (selectedItems.caseFan.quantity > 1 ? '✓×'+selectedItems.caseFan.quantity : '✓') : ''}}
+      </view>
       <view class="chip {{selectedItems.monitor ? 'selected' : ''}}" bindtap="switchComponent" data-type="monitor">
         显示器 {{selectedItems.monitor ? (selectedItems.monitor.quantity > 1 ? '✓×'+selectedItems.monitor.quantity : '✓') : ''}}
       </view>
@@ -111,6 +114,13 @@
           <view class="component-label">散热</view>
         </view>
         <view 
+          class="component-nav-item {{currentComponent === 'caseFan' ? 'active' : ''}}" 
+          data-component="caseFan" 
+          bindtap="switchComponent">
+          <view class="component-icon">🌀</view>
+          <view class="component-label">机箱散热</view>
+        </view>
+        <view 
           class="component-nav-item {{currentComponent === 'monitor' ? 'active' : ''}}" 
           data-component="monitor" 
           bindtap="switchComponent">
@@ -135,6 +145,7 @@
               currentComponent === 'psu' ? '电源' :
               currentComponent === 'case' ? '机箱' :
               currentComponent === 'cooling' ? '散热' :
+              currentComponent === 'caseFan' ? '机箱散热' :
               currentComponent === 'monitor' ? '显示器' : '组件'}}
           </view>
           <!-- 当前选中组件显示 -->
@@ -143,7 +154,7 @@
             <text class="selected-item-name">
               {{selectedItems[currentComponent].name}}
               <!-- 显示已选组件数量 -->
-              <block wx:if="{{['ram', 'gpu', 'storage', 'cooling'].indexOf(currentComponent) >= 0 && selectedItems[currentComponent].quantity > 1}}">
+              <block wx:if="{{['ram', 'gpu', 'storage', 'cooling', 'caseFan'].indexOf(currentComponent) >= 0 && selectedItems[currentComponent].quantity > 1}}">
                 ×{{selectedItems[currentComponent].quantity}}
               </block>
             </text>
@@ -153,6 +164,18 @@
         
         <!-- 筛选区 -->
         <view class="filter-section">
+          <!-- 搜索框 -->
+          <view class="search-row">
+            <view class="search-box">
+              <text class="search-icon">🔍</text>
+              <input class="search-input" placeholder="{{searchPlaceholder}}" 
+                confirm-type="search" 
+                model:value="{{searchKeyword}}" 
+                bindinput="handleSearch" />
+              <text class="search-clear" wx:if="{{searchKeyword}}" bindtap="clearSearch">✕</text>
+            </view>
+          </view>
+          
           <!-- 兼容性过滤开关 -->
           <view class="filter-row compatibility-filter">
             <view class="filter-label">兼容性过滤</view>
@@ -205,17 +228,46 @@
               
               <!-- 其他组件类型正常显示品牌列表 -->
               <block wx:else>
-                <view wx:for="{{brandOptions[currentComponent]}}" wx:key="index" 
-                      wx:if="{{index < initialBrandsCount || !brandFolded || showAllBrands}}"
-                      class="brand-item {{currentBrand === item ? 'active' : ''}}" 
-                      bindtap="filterByBrand" data-brand="{{item}}">{{item}}</view>
+                <!-- 从品牌选项中获取所有品牌并显示 -->
+                <block wx:for="{{brandOptions[currentComponent]}}" wx:key="index">
+                  <!-- 显示全部品牌，不限制数量 -->
+                  <view wx:if="{{!brandFolded || showAllBrands || index < initialBrandsCount}}"
+                        class="brand-item {{currentBrand === item ? 'active' : ''}}" 
+                        bindtap="filterByBrand" data-brand="{{item}}">
+                    {{item}}
+                  </view>
+                </block>
                 
                 <!-- 更多按钮 -->
-                <view wx:if="{{brandOptions[currentComponent].length > initialBrandsCount && brandFolded}}" 
+                <view wx:if="{{brandOptions[currentComponent].length > initialBrandsCount && brandFolded && !showAllBrands}}" 
                       class="brand-more" catchtap="toggleShowAllBrands">
-                  {{showAllBrands ? '收起' : '更多'}}
+                  更多({{brandOptions[currentComponent].length - initialBrandsCount}})
                 </view>
               </block>
+            </view>
+          </view>
+          
+          <!-- 散热类型筛选 - 仅在散热组件时显示 -->
+          <view class="filter-row" wx:if="{{currentComponent === 'cooling'}}">
+            <view class="filter-label">散热类型</view>
+            <view class="cooling-type-filter">
+              <view class="cooling-type-item {{currentCoolingType === 'all' ? 'active' : ''}}" 
+                    bindtap="filterByCoolingType" data-type="all">全部</view>
+              <view class="cooling-type-item {{currentCoolingType === '风冷' ? 'active' : ''}}" 
+                    bindtap="filterByCoolingType" data-type="风冷">风冷</view>
+              <view class="cooling-type-item {{currentCoolingType === '水冷' ? 'active' : ''}}" 
+                    bindtap="filterByCoolingType" data-type="水冷">水冷</view>
+            </view>
+          </view>
+          
+          <!-- 机箱风扇类型 - 仅在机箱散热组件时显示 -->
+          <view class="filter-row" wx:if="{{currentComponent === 'caseFan'}}">
+            <view class="filter-label">风扇类型</view>
+            <view class="cooling-type-filter">
+              <view class="cooling-type-item {{currentCoolingType === 'all' ? 'active' : ''}}" 
+                    bindtap="filterByCoolingType" data-type="all">全部</view>
+              <view class="cooling-type-item {{currentCoolingType === '机箱风扇' ? 'active' : ''}}" 
+                    bindtap="filterByCoolingType" data-type="机箱风扇">机箱风扇</view>
             </view>
           </view>
           
@@ -230,6 +282,17 @@
                     bindtap="filterByPrice" data-price="medium">中</view>
               <view class="price-item {{currentPrice === 'high' ? 'active' : ''}}" 
                     bindtap="filterByPrice" data-price="high">高</view>
+            </view>
+          </view>
+          
+          <!-- 价格排序 -->
+          <view class="filter-row">
+            <view class="filter-label">排序</view>
+            <view class="price-filter">
+              <view class="price-item {{currentPriceSort === 'asc' ? 'active' : ''}}" 
+                    bindtap="applyPriceSort" data-order="asc">价格低到高</view>
+              <view class="price-item {{currentPriceSort === 'desc' ? 'active' : ''}}" 
+                    bindtap="applyPriceSort" data-order="desc">价格高到低</view>
             </view>
           </view>
         </view>
@@ -249,32 +312,27 @@
               <view 
                 class="component-item {{selectedItems[currentComponent] && selectedItems[currentComponent].id === item.id ? 'active' : ''}}" 
                 catchtap="selectComponent"
-                data-id="{{item.id}}"
-                data-component="{{item.id}}"
+                data-item="{{item}}"
                 data-type="{{currentComponent}}">
                 
                 <view class="component-item-header">
                   <view class="component-brand">
                     <image wx:if="{{item.brandLogo}}" src="{{item.brandLogo}}" mode="aspectFit"></image>
-                    <text wx:else>{{item.brand}}</text>
+                    <text wx:else>{{item['品牌'] || '未知品牌'}}</text>
                   </view>
-                  <view class="component-name">{{item.name}}</view>
+                  <view class="component-name">{{item['名称'] || '未命名组件'}}</view>
                 </view>
                 <view class="component-item-body">
                   <view class="component-specs">
-                    <!-- 优化CPU规格显示，特别处理中文类目数据 -->
+                    <!-- CPU组件的处理 -->
                     <block wx:if="{{currentComponent === 'cpu'}}">
                       <view class="spec-item">
-                        <text class="spec-label">型号:</text>
-                        <text class="spec-value">{{item.name}}</text>
-                      </view>
-                      <view class="spec-item">
                         <text class="spec-label">接口:</text>
-                        <text class="spec-value">{{item.socket || item['接口'] || '未知'}}</text>
+                        <text class="spec-value">{{item['接口'] || '未知'}}</text>
                       </view>
                       <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index">
-                        <!-- 排除接口信息，避免重复显示 -->
-                        <block wx:if="{{spec.label !== '接口' && spec.label !== 'Socket' && spec.label !== 'CPU接口'}}">
+                        <!-- 过滤掉重复或已显示的信息 -->
+                        <block wx:if="{{spec.label !== '接口' && spec.label !== 'Socket' && spec.label !== 'CPU接口' && spec.label !== '品牌' && spec.label !== '名称' && spec.label !== '型号' && spec.label !== '价格'}}">
                           <view class="spec-item">
                             <text class="spec-label">{{spec.label}}:</text>
                             <text class="spec-value">{{spec.value}}</text>
@@ -282,29 +340,29 @@
                         </block>
                       </block>
                     </block>
-                    <!-- 其他组件的常规规格显示 -->
-                    <block wx:else>
-                      <!-- 显卡组件特殊处理，确保规格信息更全面 -->
-                      <block wx:if="{{currentComponent === 'gpu'}}">
+                    <!-- 显卡组件的处理 -->
+                    <block wx:elif="{{currentComponent === 'gpu'}}">
+                      <!-- 显示所有规格，但过滤掉重复信息 -->
+                      <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index" wx:if="{{(index < 4 || item.showMoreSpecs) && spec.label !== '品牌' && spec.label !== '名称' && spec.label !== '型号' && spec.label !== '价格'}}">
                         <view class="spec-item">
-                          <text class="spec-label">型号:</text>
-                          <text class="spec-value">{{item.name}}</text>
+                          <text class="spec-label">{{spec.label}}:</text>
+                          <text class="spec-value">{{spec.value}}</text>
                         </view>
-                        <view class="spec-item" wx:if="{{item.brand}}">
-                          <text class="spec-label">品牌:</text>
-                          <text class="spec-value">{{item.brand}}</text>
-                        </view>
-                        <!-- 显示所有规格，确保关键参数优先显示 -->
-                        <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index">
-                          <view class="spec-item">
-                            <text class="spec-label">{{spec.label}}:</text>
-                            <text class="spec-value">{{spec.value}}</text>
-                          </view>
-                        </block>
                       </block>
-                      <!-- 其他组件的常规规格显示 -->
-                      <block wx:else>
-                        <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index">
+                      
+                      <!-- 更多参数开关（超过4项时才显示） -->
+                      <block wx:if="{{item.specs.length > 4}}">
+                        <view class="spec-more" catchtap="toggleSpecDetail" data-id="{{item.id}}">
+                          <text class="more-text">{{item.showMoreSpecs ? '收起' : '显示更多参数'}}</text>
+                          <text class="more-icon">{{item.showMoreSpecs ? '▲' : '▼'}}</text>
+                        </view>
+                      </block>
+                    </block>
+                    <!-- 其他组件的处理 -->
+                    <block wx:else>
+                      <block wx:for="{{item.specs}}" wx:for-item="spec" wx:key="index">
+                        <!-- 过滤掉重复信息 -->
+                        <block wx:if="{{spec.label !== '品牌' && spec.label !== '名称' && spec.label !== '型号' && spec.label !== '价格'}}">
                           <view class="spec-item">
                             <text class="spec-label">{{spec.label}}:</text>
                             <text class="spec-value">{{spec.value}}</text>
@@ -315,31 +373,48 @@
                   </view>
                 </view>
                 <view class="component-item-footer">
-                  <view class="component-price">¥{{item.price === '*' ? '市场价' : item.price}}
+                  <view class="component-price">¥{{item['价格'] || '市场价'}}
                     <text wx:if="{{item.lastPriceUpdate}}" class="price-update-time">({{formatDate(item.lastPriceUpdate)}}更新)</text>
                   </view>
                   
                   <!-- 选择按钮 - 优化条件判断 -->
                   <block wx:if="{{selectedItems[currentComponent] && selectedItems[currentComponent].id === item.id}}">
-                    <!-- 检查是否是支持多选的组件类型 - 完全硬编码方式 -->
-                    <block wx:if="{{currentComponent == 'ram' || currentComponent == 'gpu' || currentComponent == 'storage' || currentComponent == 'cooling' || currentComponent == 'monitor'}}">
-                      <view class="select-btn active number-btn">
-                        <text class="quantity-label">数量:</text>
-                        <text class="quantity-value">{{selectedItems[currentComponent].quantity || 1}}</text>
-                        <view class="quantity-ctrl">
-                          <view class="minus" catchtap="decreaseQuantity" data-id="{{item.id}}">-</view>
-                          <view class="plus" catchtap="increaseQuantity" data-id="{{item.id}}">+</view>
+                    <view class="component-item-actions">
+                      <!-- 修改多选组件类型的判断，添加caseFan -->
+                      <block wx:if="{{currentComponent == 'ram' || currentComponent == 'gpu' || currentComponent == 'storage' || currentComponent == 'monitor' || currentComponent == 'caseFan'}}">
+                        <view class="quantity-selector">
+                          <view class="quantity-btn decrease" catchtap="decreaseQuantity" data-item="{{item}}">-</view>
+                          <view class="quantity-value">{{selectedItems[currentComponent].quantity || 1}}</view>
+                          <view class="quantity-btn increase" catchtap="increaseQuantity" data-item="{{item}}">+</view>
                         </view>
-                      </view>
-                    </block>
-                    <!-- 非多选组件显示已选 -->
-                    <block wx:else>
-                      <view class="select-btn active">已选</view>
-                    </block>
+                      </block>
+                      <!-- 特殊处理散热器组件，根据类型判断是否显示数量选择器 -->
+                      <block wx:elif="{{currentComponent == 'cooling'}}">
+                        <!-- 判断是否为机箱风扇 -->
+                        <block wx:if="{{item['散热形式'] === '机箱风扇' || item['名称'].indexOf('机箱风扇') >= 0 || (item['名称'].indexOf('风扇') >= 0 && item['名称'].indexOf('CPU') < 0 && item['名称'].indexOf('散热器') < 0 && item['名称'].indexOf('水冷') < 0)}}">
+                          <view class="quantity-selector">
+                            <view class="quantity-btn decrease" catchtap="decreaseQuantity" data-item="{{item}}">-</view>
+                            <view class="quantity-value">{{selectedItems[currentComponent].quantity || 1}}</view>
+                            <view class="quantity-btn increase" catchtap="increaseQuantity" data-item="{{item}}">+</view>
+                          </view>
+                        </block>
+                        <!-- 风冷和水冷散热器只显示"已选" -->
+                        <block wx:else>
+                          <view class="select-btn active">已选</view>
+                        </block>
+                      </block>
+                      <!-- 非多选组件显示已选 -->
+                      <block wx:else>
+                        <view class="select-btn active">已选</view>
+                      </block>
+                      
+                      <!-- 取消选择按钮 -->
+                      <view class="cancel-btn" catchtap="cancelSelection" data-type="{{currentComponent}}" data-id="{{item.id}}">取消</view>
+                    </view>
                   </block>
                   <!-- 未选状态显示选择按钮 -->
                   <block wx:else>
-                    <view class="select-btn" catchtap="selectComponent" data-id="{{item.id}}" data-component="{{item.id}}" data-type="{{currentComponent}}">选择</view>
+                    <view class="select-btn" catchtap="selectComponent" data-item="{{item}}" data-type="{{currentComponent}}">选择</view>
                   </block>
                 </view>
               </view>
@@ -357,6 +432,7 @@
                 currentComponent === 'psu' ? '电源' :
                 currentComponent === 'case' ? '机箱' :
                 currentComponent === 'cooling' ? '散热器' :
+                currentComponent === 'caseFan' ? '机箱风扇' :
                 currentComponent === 'monitor' ? '显示器' : ''
               }}</view>
               <view class="empty-subtext">请尝试更改筛选条件</view>
@@ -374,5 +450,36 @@
   <view class="action-bar">
     <button class="action-btn btn-secondary" bindtap="resetConfig">重置</button>
     <button class="action-btn btn-primary" bindtap="saveConfig">保存配置</button>
+  </view>
+  
+  <!-- 隐藏的Canvas用于生成分享图片 -->
+  <canvas canvas-id="shareCanvas" style="width: 400px; height: 650px; position: fixed; left: -1000px; top: -1000px;"></canvas>
+  
+  <!-- 分享弹窗 -->
+  <view class="share-modal" wx:if="{{showShareModal}}">
+    <view class="share-panel">
+      <view class="share-title">分享我的配置</view>
+      
+      <view class="share-options">
+        <view class="share-option" bindtap="shareToFriend">
+          <view class="share-icon-large wechat-icon">
+            <text class="icon-text">微信</text>
+          </view>
+          <view class="share-text">发送给朋友</view>
+        </view>
+        <view class="share-option" bindtap="generateShareImage">
+          <view class="share-icon-large moments-icon">
+            <text class="icon-text">相册</text>
+          </view>
+          <view class="share-text">保存到相册</view>
+        </view>
+      </view>
+      
+      <view class="share-tips">
+        <text>提示：保存图片后可分享到朋友圈</text>
+      </view>
+      
+      <view class="close-btn" bindtap="closeShareModal">取消</view>
+    </view>
   </view>
 </view> 

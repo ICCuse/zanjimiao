@@ -1,16 +1,24 @@
-// app.js
+﻿// app.js
 App({
   onLaunch() {
     // 初始化云环境
     if (wx.cloud) {
       wx.cloud.init({
-        env: 'pcconfig-7grn6s1naf2b91d9',
+        env: 'your-cloud-env-id',
         traceUser: true
       });
-      console.log('云环境初始化成功');
+      this.debugLog('云环境初始化成功');
     } else {
       console.error('请使用2.2.3以上的基础库以使用云能力');
     }
+    
+    // 处理资源加载失败的问题
+    wx.onError((error) => {
+      console.error('全局错误捕获:', error);
+      if (error.includes('no such file or directory') || error.includes('Failed to load local image')) {
+        console.warn('资源文件加载失败，可能是本地资源不存在');
+      }
+    });
     
     // 初始化全局数据
     this.initGlobalData()
@@ -23,12 +31,19 @@ App({
     // 需要在应用启动时执行的逻辑
   },
 
+  // 调试日志函数
+  debugLog: function(...args) {
+    if (this.globalData && this.globalData.debugMode && this.globalData.debugMode.appLog) {
+      console.log(...args);
+    }
+  },
+
   // 初始化全局数据
   initGlobalData: function() {
     // 首次启动时将默认预设方案写入存储
     const hasInitialized = wx.getStorageSync('app_initialized');
     if (!hasInitialized) {
-      console.log('首次初始化应用，写入预设方案数据');
+      this.debugLog('首次初始化应用，写入预设方案数据');
       wx.setStorageSync('preset_plans', this.defaultPresetPlans);
       wx.setStorageSync('app_initialized', true);
     }
@@ -36,7 +51,7 @@ App({
     // 从本地存储中获取各类数据
     let presetPlans = wx.getStorageSync('preset_plans');
     if (!presetPlans || presetPlans.length === 0) {
-      console.log('未找到预设方案数据，使用默认数据');
+      this.debugLog('未找到预设方案数据，使用默认数据');
       presetPlans = this.defaultPresetPlans;
       wx.setStorageSync('preset_plans', presetPlans);
     }
@@ -46,7 +61,7 @@ App({
     const viewHistory = wx.getStorageSync('view_history') || [];
     const configDraft = wx.getStorageSync('config_draft') || null;
     
-    console.log('已加载预设方案数量:', presetPlans.length);
+    this.debugLog('已加载预设方案数量:', presetPlans.length);
     
     // 设置全局数据
     this.globalData = {
@@ -57,7 +72,16 @@ App({
       configDraft: configDraft, // 配置草稿
       userInfo: null,           // 用户信息
       systemInfo: null,         // 系统信息
-      hasLogin: false           // 登录状态
+      hasLogin: false,          // 登录状态
+      sharedConfig: null,       // 共享配置数据，用于本地分享
+      // 添加日志控制变量
+      debugMode: wx.getStorageSync('debug_mode') || {
+        compatibilityLog: false, // 兼容性检查日志开关
+        networkLog: false,       // 网络请求日志开关
+        performanceLog: false,   // 性能测试日志开关
+        appLog: true,            // 应用日志开关
+        coolingDebug: false      // 散热组件筛选日志开关
+      }
     };
     
     // 获取系统信息
@@ -83,6 +107,66 @@ App({
     }
   },
   
+  // 统一的登录方法
+  login: function(successCallback, failCallback) {
+    // 检查是否已登录
+    if (this.globalData.hasLogin) {
+      this.debugLog('用户已登录，直接返回成功');
+      if (typeof successCallback === 'function') {
+        successCallback();
+      }
+      return;
+    }
+    
+    // 引导用户前往个人中心登录
+    wx.showModal({
+      title: '需要登录',
+      content: '请前往个人中心登录',
+      confirmText: '去登录',
+      success: (res) => {
+        if (res.confirm) {
+          // 保存当前页面路径，登录后可返回
+          const pages = getCurrentPages();
+          const currentPage = pages[pages.length - 1];
+          const currentPath = currentPage ? currentPage.route : '';
+          
+          // 将当前路径保存到缓存
+          if (currentPath) {
+            wx.setStorageSync('login_redirect', currentPath);
+          }
+          
+          // 跳转到个人中心
+          wx.switchTab({
+            url: '/pages/profile/profile',
+            success: () => {
+              // 用户点击去登录，我们认为操作成功了
+              if (typeof successCallback === 'function') {
+                successCallback();
+              }
+            },
+            fail: (err) => {
+              console.error('跳转到个人中心失败:', err);
+              if (typeof failCallback === 'function') {
+                failCallback(err);
+              }
+            }
+          });
+        } else {
+          // 用户取消登录
+          if (typeof failCallback === 'function') {
+            failCallback(new Error('用户取消登录'));
+          }
+        }
+      },
+      fail: (err) => {
+        console.error('显示登录提示失败:', err);
+        if (typeof failCallback === 'function') {
+          failCallback(err);
+        }
+      }
+    });
+  },
+  
   // 保存用户配置方案
   saveUserConfig: function(config) {
     if (!config || !config.id) {
@@ -99,7 +183,7 @@ App({
         }
       })
       .then(res => {
-        console.log('保存配置到云数据库成功:', res)
+        this.debugLog('保存配置到云数据库成功:', res)
         
         // 保存成功后，更新本地缓存
         this.updateLocalUserConfigs(config)
@@ -146,33 +230,59 @@ App({
         name: 'getUserConfigs'
       })
       .then(res => {
-        console.log('从云数据库获取配置成功:', res)
+        this.debugLog('从云数据库获取配置成功:', res);
         
         if (res.result && res.result.success) {
           // 更新本地缓存
-          const configs = res.result.data || []
-          this.globalData.userConfigs = configs
-          wx.setStorageSync('user_configs', configs)
+          let configs = res.result.data || [];
           
-          resolve(configs)
+          // 过滤掉没有有效ID的配置
+          configs = configs.filter(config => config && config.id);
+          
+          // 处理日期格式，确保日期是JavaScript日期对象
+          configs.forEach(config => {
+            if (config.createTime && typeof config.createTime === 'string') {
+              config.createTime = new Date(config.createTime);
+            }
+            if (config.updateTime && typeof config.updateTime === 'string') {
+              config.updateTime = new Date(config.updateTime);
+            }
+          });
+          
+          this.debugLog('格式化后的配置数量:', configs.length);
+          
+          // 更新全局数据和本地存储
+          this.globalData.userConfigs = configs;
+          wx.setStorageSync('user_configs', configs);
+          
+          resolve(configs);
         } else {
+          console.warn('云函数返回错误:', res.result);
           // 如果云函数返回错误，尝试使用本地缓存
-          const storedConfigs = wx.getStorageSync('user_configs') || []
-          this.globalData.userConfigs = storedConfigs
+          let storedConfigs = wx.getStorageSync('user_configs') || [];
           
-          resolve(storedConfigs)
+          // 过滤本地缓存中无效ID的配置
+          storedConfigs = storedConfigs.filter(config => config && config.id);
+          
+          this.globalData.userConfigs = storedConfigs;
+          
+          resolve(storedConfigs);
         }
       })
       .catch(err => {
-        console.error('从云数据库获取配置失败:', err)
+        console.error('从云数据库获取配置失败:', err);
         
         // 如果云函数调用失败，尝试使用本地缓存
-        const storedConfigs = wx.getStorageSync('user_configs') || []
-        this.globalData.userConfigs = storedConfigs
+        let storedConfigs = wx.getStorageSync('user_configs') || [];
         
-        resolve(storedConfigs)
-      })
-    })
+        // 过滤本地缓存中无效ID的配置
+        storedConfigs = storedConfigs.filter(config => config && config.id);
+        
+        this.globalData.userConfigs = storedConfigs;
+        
+        resolve(storedConfigs);
+      });
+    });
   },
   
   // 获取某个配置方案（包括预设和用户自定义的）
@@ -694,7 +804,7 @@ App({
   deleteUserConfig: function(configId) {
     if (!configId) {
       console.error('配置ID无效')
-      return false
+      return Promise.reject(new Error('配置ID无效'))
     }
     
     return new Promise((resolve, reject) => {
@@ -706,24 +816,62 @@ App({
         }
       })
       .then(res => {
-        console.log('从云数据库删除配置成功:', res)
+        console.log('云函数调用结果:', res)
         
-        // 删除成功后，更新本地缓存
-        this.removeLocalUserConfig(configId)
-        
-        resolve(true)
+        // 检查云函数返回结果
+        if (res.result && res.result.success) {
+          // 删除成功，更新本地缓存
+          this.removeLocalUserConfig(configId)
+          resolve(res.result)
+        } else if (res.result && res.result.error && res.result.error.includes('未找到该配置')) {
+          // 云端找不到但有本地记录，也删除本地缓存
+          console.log('云端未找到配置，尝试删除本地缓存')
+          this.removeLocalUserConfig(configId)
+          resolve({success: true, message: '本地配置已删除'})
+        } else {
+          // 其他错误
+          reject(new Error(res.result?.error || '删除失败'))
+        }
       })
       .catch(err => {
         console.error('从云数据库删除配置失败:', err)
-        reject(err)
+        
+        // 尝试清理本地缓存
+        console.log('尝试清理本地缓存')
+        const removed = this.removeLocalUserConfig(configId)
+        
+        if (removed) {
+          // 如果本地缓存删除成功，就算成功
+          resolve({success: true, message: '本地配置已删除，但云端操作失败'})
+        } else {
+          reject(err)
+        }
       })
     })
   },
   
   // 从本地缓存删除配置
-  removeLocalUserConfig: function(configId) {
+  removeLocalUserConfig: function(configId, forceClean = false) {
     // 获取当前用户配置列表
     let userConfigs = this.globalData.userConfigs || []
+    
+    if (forceClean && (!configId || configId === '')) {
+      // 强制清理模式：删除所有无效ID的配置
+      const validConfigs = userConfigs.filter(item => item.id && item.id !== '')
+      
+      // 如果有无效配置被移除
+      if (validConfigs.length < userConfigs.length) {
+        console.log('已清理无效ID的配置数量:', userConfigs.length - validConfigs.length)
+        
+        // 更新全局数据和本地存储
+        this.globalData.userConfigs = validConfigs
+        wx.setStorageSync('user_configs', validConfigs)
+        
+        return true
+      }
+      
+      return false
+    }
     
     // 查找配置索引
     const index = userConfigs.findIndex(item => item.id === configId)
@@ -757,5 +905,56 @@ App({
     }
     
     return false
+  },
+  
+  // 获取日志开关状态
+  getDebugMode: function(type) {
+    if (type) {
+      return this.globalData.debugMode[type] || false;
+    }
+    return this.globalData.debugMode;
+  },
+  
+  // 设置日志开关状态
+  setDebugMode: function(type, value) {
+    if (this.globalData.debugMode) {
+      this.globalData.debugMode[type] = value;
+      // 保存到本地存储
+      wx.setStorageSync('debug_mode', this.globalData.debugMode);
+      
+      this.debugLog(`调试模式 ${type} 已${value ? '开启' : '关闭'}`);
+    }
+  },
+  
+  // 分享配置(简化版)
+  generateShareImage: function() {
+    // 检查必要的数据
+    if (!this.globalData.currentConfigId) {
+      console.log('未找到配置ID，无法生成分享');
+      wx.showToast({
+        title: '未找到配置数据',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 跳转到分享页面
+    wx.navigateTo({
+      url: `/pages/shared/shared?id=${this.globalData.currentConfigId}`
+    });
+  },
+  
+  // 清除用户配置缓存
+  clearUserConfigsCache: function() {
+    // 首先尝试清理无效配置
+    this.removeLocalUserConfig('', true)
+    
+    // 清空全局数据
+    this.globalData.userConfigs = []
+    
+    // 清空本地存储
+    wx.setStorageSync('user_configs', [])
+    
+    return true
   }
 }) 

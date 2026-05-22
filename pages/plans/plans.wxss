@@ -423,4 +423,36 @@
 .filter-btn.apply {
   background-color: #ff6b00;
   color: white;
+}
+
+/* 加载更多样式 */
+.loading-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20rpx 0;
+  width: 100%;
+}
+
+.loading-more .loading-spinner {
+  width: 40rpx;
+  height: 40rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10rpx;
+}
+
+.loading-more-text {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.no-more-data {
+  text-align: center;
+  padding: 20rpx 0;
+  color: #999;
+  font-size: 26rpx;
+  width: 100%;
 } 

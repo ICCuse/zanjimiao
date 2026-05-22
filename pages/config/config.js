@@ -2,6 +2,23 @@
 const app = getApp()
 // 删除本地数据引用
 
+// 顶部添加compatibility.js的引用
+const compatibility = require('../../utils/compatibility.js');
+
+// 添加调试日志函数
+const debugLog = function(...args) {
+  if (app && app.getDebugMode && app.getDebugMode('compatibilityLog')) {
+    console.log(...args);
+  }
+};
+
+// 添加散热组件筛选专用的日志函数
+const coolingLog = function(...args) {
+  if (app && app.getDebugMode && app.getDebugMode('coolingDebug')) {
+    console.log('[散热组件]', ...args);
+  }
+};
+
 Page({
   data: {
     // 步骤和选项数据
@@ -10,13 +27,25 @@ Page({
     userPurpose: '', // 用户选择的用途：gaming, work, office, customize
     budget: 'medium', // 预算：low, medium, high, unlimited
     
+    // 添加分享相关数据
+    showShareModal: false, // 控制分享弹窗显示
+    configId: '', // 配置的唯一ID
+    
     // 组件相关数据
     currentComponent: 'cpu', // 当前查看的组件类型
     currentBrand: 'all',    // 当前筛选的品牌
     currentPrice: 'all',    // 当前筛选的价格范围
+    currentPriceSort: 'asc', // 当前的价格排序方式: asc(升序), desc(降序)
+    currentCoolingType: 'all', // 当前散热类型筛选: all(全部), 风冷, 水冷, 机箱风扇
+    
     components: {},         // 所有组件数据
     filteredComponents: [], // 筛选后的组件
-    filteredComponentsCount: 0,
+    allFilteredComponents: [], // 存储完整的筛选结果
+    displayedCount: 20,     // 一次显示的数量
+    hasMoreComponents: false, // 是否还有更多组件可显示
+    
+    // 兼容性过滤开关
+    onlyShowCompatible: true, // 默认开启兼容性过滤
     
     // 品牌折叠相关
     brandFolded: true,      // 默认品牌列表折叠
@@ -33,6 +62,7 @@ Page({
       psu: 'power_data',
       case: 'case_data',
       cooling: 'cooler_data',
+      caseFan: 'cooler_data',      // 新增:机箱散热，共用散热器集合
       // monitor没有对应集合，需要处理这种情况
       monitor: 'monitor_data'
     },
@@ -76,7 +106,7 @@ Page({
       common: {
         // 通用品牌提取函数
         extractBrand: function(item, type) {
-          console.log(`通用提取品牌 (${type}):`, item);
+          debugLog(`通用提取品牌 (${type}):`, item);
           // 根据组件类型选择不同的字段
           if (type === 'motherboard') {
             return item.brand || '';
@@ -103,7 +133,7 @@ Page({
           try {
             // 获取项目的品牌
             const itemBrand = this.extractBrand(item);
-            console.log(`通用品牌匹配: 项目=${JSON.stringify(item)}, 提取品牌=${itemBrand}, 目标品牌=${targetBrand}`);
+            debugLog(`通用品牌匹配: 项目=${JSON.stringify(item)}, 提取品牌=${itemBrand}, 目标品牌=${targetBrand}`);
             
             // 如果品牌为空，返回false
             if (!itemBrand) return false;
@@ -120,24 +150,24 @@ Page({
       cpu: {
         // CPU特定的品牌提取
         extractBrand: function(item) {
-          console.log(`CPU提取品牌, 原始项目:`, item);
+          debugLog(`CPU提取品牌, 原始项目:`, item);
           
           // 尝试多种可能的字段名
           let brand = item.品牌 || item.brand || '';
           
           // 调试日志
-          console.log(`CPU初始品牌提取: ${brand}`);
+          debugLog(`CPU初始品牌提取: ${brand}`);
           
           // 处理拼写错误的品牌 - 特别是"inter"应该是"intel"
           if (brand.toLowerCase() === 'inter') {
             brand = 'intel';
-            console.log(`修正品牌拼写: inter -> intel`);
+            debugLog(`修正品牌拼写: inter -> intel`);
           }
           
           // 如果没有品牌字段，尝试从名称中提取
           if ((!brand || brand.trim() === '') && (item.名称 || item.name)) {
             const name = (item.名称 || item.name || '').toLowerCase();
-            console.log(`CPU名称: ${name}`);
+            debugLog(`CPU名称: ${name}`);
             
             // AMD特殊关键词识别增强
             if (name.includes('intel') || name.includes('酷睿') || 
@@ -152,7 +182,7 @@ Page({
                       name.includes('athlon') ||
                       name.includes('fx-')) {
               brand = 'amd';
-              console.log(`通过增强规则识别到AMD处理器: ${item.名称 || item.name}`);
+              debugLog(`通过增强规则识别到AMD处理器: ${item.名称 || item.name}`);
           } else {
               // 提取名称中的第一个单词作为品牌
               brand = name.split(' ')[0];
@@ -178,11 +208,11 @@ Page({
                      brand.toLowerCase().includes('threadripper') ||
                      /\br\d\b/i.test(brand.toLowerCase())) {
               brand = 'AMD';
-              console.log(`标准化为AMD品牌: ${brand}, 原始值: ${item.品牌 || item.brand}`);
+              debugLog(`标准化为AMD品牌: ${brand}, 原始值: ${item.品牌 || item.brand}`);
             }
           }
           
-          console.log(`CPU最终提取品牌: ${brand}`);
+          debugLog(`CPU最终提取品牌: ${brand}`);
           return brand;
         },
         
@@ -196,7 +226,7 @@ Page({
             const cpuBrand = item.brand || '';
             const cpuName = item.name || '';
             
-            console.log(`[CPU匹配] 匹配项目: ${cpuName}, 品牌: ${cpuBrand}, 目标品牌: ${targetBrand}`);
+            debugLog(`[CPU匹配] 匹配项目: ${cpuName}, 品牌: ${cpuBrand}, 目标品牌: ${targetBrand}`);
             
             // 如果品牌为空，检查名称
             if (!cpuBrand && !cpuName) return false;
@@ -210,7 +240,7 @@ Page({
             if (lowerTargetBrand === 'amd' || lowerTargetBrand === '锐龙') {
               // 品牌字段中包含AMD
               if (lowerCpuBrand === 'amd' || lowerCpuBrand.includes('amd')) {
-                console.log(`[CPU匹配] 匹配成功-品牌字段: ${cpuName}`);
+                debugLog(`[CPU匹配] 匹配成功-品牌字段: ${cpuName}`);
                 return true;
               }
               
@@ -221,7 +251,7 @@ Page({
                   lowerCpuName.includes('threadripper') ||
                   lowerCpuName.includes('athlon') ||
                   /\br\d\b/i.test(lowerCpuName)) { // R3, R5, R7, R9等
-                console.log(`[CPU匹配] 匹配成功-名称关键词: ${cpuName}`);
+                debugLog(`[CPU匹配] 匹配成功-名称关键词: ${cpuName}`);
                 return true;
               }
               
@@ -291,7 +321,7 @@ Page({
             }
           }
           
-          console.log(`提取主板品牌: ${brand}, 名称: ${mbItem.name || ''}`);
+          debugLog(`提取主板品牌: ${brand}, 名称: ${mbItem.name || ''}`);
           return brand;
         },
         
@@ -335,7 +365,7 @@ Page({
             }
           }
           
-          console.log(`提取内存品牌: ${brand}, 名称: ${ramItem.名称 || ''}`);
+          debugLog(`提取内存品牌: ${brand}, 名称: ${ramItem.名称 || ''}`);
           return brand;
         },
         
@@ -390,7 +420,7 @@ Page({
             }
           }
           
-          console.log(`提取显卡品牌: ${brand}, 名称: ${gpuItem.名称 || ''}`);
+          debugLog(`提取显卡品牌: ${brand}, 名称: ${gpuItem.名称 || ''}`);
           return brand;
         },
         
@@ -435,7 +465,7 @@ Page({
             }
           }
           
-          console.log(`提取存储品牌: ${brand}, 名称: ${storageItem.型号 || storageItem.名称 || ''}`);
+          debugLog(`提取存储品牌: ${brand}, 名称: ${storageItem.型号 || storageItem.名称 || ''}`);
           return brand;
         },
         
@@ -481,7 +511,7 @@ Page({
             }
           }
           
-          console.log(`提取电源品牌: ${brand}, 名称: ${psuItem.名称 || ''}`);
+          debugLog(`提取电源品牌: ${brand}, 名称: ${psuItem.名称 || ''}`);
           return brand;
         },
         
@@ -525,7 +555,7 @@ Page({
             }
           }
           
-          console.log(`提取机箱品牌: ${brand}, 名称: ${caseItem.名称 || ''}`);
+          debugLog(`提取机箱品牌: ${brand}, 名称: ${caseItem.名称 || ''}`);
           return brand;
         },
         
@@ -569,7 +599,7 @@ Page({
             }
           }
           
-          console.log(`提取散热器品牌: ${brand}, 名称: ${coolingItem.名称 || ''}`);
+          debugLog(`提取散热器品牌: ${brand}, 名称: ${coolingItem.名称 || ''}`);
           return brand;
         },
         
@@ -586,39 +616,329 @@ Page({
         }
       }
     },
+    
+    // 搜索相关
+    searchKeyword: '', // 搜索关键词
+    searchPlaceholder: '搜索CPU', // 搜索框占位符，默认为CPU
+    
+    // 筛选相关
+    currentBrand: 'all', // 当前筛选的品牌
+    currentPrice: 'all', // 当前筛选的价格范围
+    currentCoolingType: 'all', // 当前散热类型筛选
   },
 
   /**
-   * 页面加载时执行
+   * 生命周期函数--监听页面加载
    */
-  onLoad: function() {
-    console.log('[页面加载] 开始初始化页面');
-    
-    // 获取屏幕高度，用于设置滚动区域的高度
-    try {
-      const systemInfo = wx.getSystemInfoSync();
-              this.setData({
-        screenHeight: systemInfo.windowHeight
-      });
-      console.log(`[页面加载] 屏幕高度: ${systemInfo.windowHeight}px`);
-    } catch (e) {
-      console.error('[页面加载] 获取系统信息失败:', e);
-    }
-    
-    // 初始化数据
-    this.loadComponentData();
-    
-    // 初始化品牌折叠状态和显示数量
+  onLoad: function (options) {
+    debugLog('[页面生命周期] 页面加载 onLoad');
+
+    // 设置搜索框占位符
     this.setData({
-      brandFolded: true,
-      showAllBrands: false,
-      initialBrandsCount: 6  // 默认显示的品牌数量
+      searchPlaceholder: this.getSearchPlaceholder('cpu')
     });
     
-    // 确保CPU品牌选项至少包含英特尔和AMD
+    // 初始化品牌选项
     this.ensureCpuBrands();
     
-    console.log('[页面加载] 页面初始化完成');
+    // 如果有传入参数，初始化配置状态
+    if (options && options.initialComponent) {
+      debugLog('初始化为指定组件类型:', options.initialComponent);
+      this.setData({
+        currentComponent: options.initialComponent
+      });
+    }
+    
+    // 获取用户信息
+    wx.getSetting({
+      success: res => {
+        if (res.authSetting['scope.userInfo']) {
+          wx.getUserInfo({
+            success: res => {
+              this.setData({
+                userInfo: res.userInfo,
+                hasUserInfo: true
+              });
+            }
+          });
+        }
+      }
+    });
+    
+    // 初始化兼容性过滤状态
+    this.setData({
+      onlyShowCompatible: true
+    });
+    
+    // 加载第一个组件类型数据
+    this.loadComponentsByType(this.data.currentComponent);
+  },
+
+  /**
+   * 页面显示时执行
+   */
+  onShow: function() {
+    // 检查是否是从配置页返回
+    const pages = getCurrentPages();
+    const prevPage = pages.length > 1 ? pages[pages.length - 2] : null;
+    if (prevPage && prevPage.route && (prevPage.route.includes('configPreview') || prevPage.route.includes('detail'))) {
+      // 从预览页或详情页返回，不重新加载数据
+      debugLog('[页面显示] 从预览页或详情页返回，不重新加载数据');
+      
+      // 如果当前没有配置数据，则强制重新加载
+      if (!this.data.components || !this.data.filteredComponents || this.data.filteredComponents.length === 0) {
+        debugLog('[页面显示] 当前无配置数据，强制重新加载');
+        if (this.data.currentComponent) {
+          this.loadComponentsByType(this.data.currentComponent);
+        } else {
+          this.loadComponentData();
+        }
+      }
+    } else {
+      // 检查全局数据中是否有从智能推荐传递过来的配置
+      const app = getApp();
+      if (app.globalData && app.globalData.selectedItems && Object.keys(app.globalData.selectedItems).length > 0) {
+        debugLog('[页面显示] 发现智能推荐配置:', app.globalData.selectedItems);
+        
+        try {
+          // 使用统一的数据标准化方法处理配置
+          const standardizedComponents = this.standardizeComponents(app.globalData.selectedItems);
+          
+          // 设置推荐的组件和总价
+          this.setData({
+            selectedItems: standardizedComponents,
+            configName: app.globalData.configName || '推荐配置'
+          });
+          
+          // 重新计算总价格
+          this.calculateTotalPrice();
+          
+          // 确保品牌选项初始化
+          this.ensureAllBrandOptions();
+          
+          // 清除全局数据，防止重复加载
+          app.globalData.selectedItems = {};
+          
+          // 提示用户
+          wx.showToast({
+            title: '已加载推荐配置',
+            icon: 'success',
+            duration: 1500
+          });
+          
+          // 延迟初始化组件显示，确保数据加载完毕
+          setTimeout(() => {
+            this.initializeComponentDisplay();
+          }, 200);
+        } catch (error) {
+          console.error('[页面显示] 加载推荐配置失败:', error);
+          
+          wx.showToast({
+            title: '加载推荐配置失败',
+            icon: 'none',
+            duration: 2000
+          });
+        }
+      } else {
+        // 检查本地存储中是否有要编辑的配置
+        const editConfig = wx.getStorageSync('edit_config');
+        if (editConfig && Object.keys(editConfig).length > 0) {
+          debugLog('[页面显示] 发现要编辑的配置:', editConfig);
+          
+          try {
+            // 提取组件数据
+            const componentsToEdit = editConfig.components || {};
+            
+            // 如果配置直接包含组件信息（旧格式）
+            const componentTypes = ['cpu', 'motherboard', 'ram', 'memory', 'gpu', 'storage', 'ssd', 'hdd', 'psu', 'powerSupply', 'case', 'cooling', 'caseFan', 'monitor'];
+            const extractedComponents = {};
+            
+            // 检查组件是否在components字段中或直接在配置中
+            if (Object.keys(componentsToEdit).length > 0) {
+              // 如果有components字段，使用它
+              Object.keys(componentsToEdit).forEach(type => {
+                if (componentsToEdit[type]) {
+                  // 处理字段名称映射
+                  const mappedType = this.mapComponentType(type);
+                  extractedComponents[mappedType] = componentsToEdit[type];
+                }
+              });
+            } else {
+              // 如果没有components字段，检查直接在配置中的组件
+              componentTypes.forEach(type => {
+                if (editConfig[type]) {
+                  // 处理字段名称映射
+                  const mappedType = this.mapComponentType(type);
+                  extractedComponents[mappedType] = editConfig[type];
+                }
+              });
+            }
+            
+            // 使用统一的数据标准化方法处理配置
+            const standardizedComponents = this.standardizeComponents(extractedComponents);
+            
+            // 设置要编辑的组件和配置名称
+            this.setData({
+              selectedItems: standardizedComponents,
+              configName: editConfig.name || editConfig.title || '编辑的配置'
+            });
+            
+            // 重新计算总价格
+            this.calculateTotalPrice();
+            
+            // 确保品牌选项初始化
+            this.ensureAllBrandOptions();
+            
+            // 清除本地存储，防止重复加载
+            wx.removeStorageSync('edit_config');
+            
+            // 提示用户
+            wx.showToast({
+              title: '已加载编辑配置',
+              icon: 'success',
+              duration: 1500
+            });
+            
+            // 延迟初始化组件显示，确保数据加载完毕
+            setTimeout(() => {
+              this.initializeComponentDisplay();
+            }, 200);
+          } catch (error) {
+            console.error('[页面显示] 加载编辑配置失败:', error);
+            
+            wx.showToast({
+              title: '加载编辑配置失败',
+              icon: 'none',
+              duration: 2000
+            });
+            
+            // 清除本地存储，防止影响后续操作
+            wx.removeStorageSync('edit_config');
+          }
+        }
+      }
+    }
+  },
+
+  /**
+   * 标准化组件数据 - 确保所有组件数据格式一致
+   * @param {Object} components 组件数据对象
+   * @return {Object} 标准化后的组件数据对象
+   */
+  standardizeComponents: function(components) {
+    debugLog('[数据处理] 开始标准化组件数据');
+    const standardized = {};
+    
+    // 处理每种组件类型
+    Object.keys(components).forEach(type => {
+      const component = components[type];
+      if (!component) return;
+      
+      // 基本信息标准化
+      standardized[type] = {
+        id: component.id || `${type}_${Date.now()}`,
+        type: type,
+        name: component.name || component['名称'] || '',
+        price: component.price || component['价格'] || 0,
+        brand: component.brand || component['品牌'] || '',
+        // 确保specs是数组
+        specs: Array.isArray(component.specs) ? [...component.specs] : [],
+        // 复制其他所有字段
+        ...component
+      };
+      
+      // 确保关键字段存在
+      if (!standardized[type].specsText && component.specs && component.specs.length > 0) {
+        // 从specs中构建specsText
+        const mainSpecs = component.specs.slice(0, 3).map(spec => spec.value).join(' ');
+        standardized[type].specsText = mainSpecs;
+      }
+      
+      // 特殊组件类型处理
+      if (type === 'cpu') {
+        standardized[type].socket = standardized[type].socket || standardized[type]['接口'] || 'LGA1700';
+      } else if (type === 'motherboard') {
+        standardized[type].socket = standardized[type].socket || standardized[type]['接口'] || 'LGA1700';
+        // 如果CPU存在，确保接口兼容
+        if (components.cpu) {
+          standardized[type].socket = components.cpu.socket || components.cpu['接口'] || standardized[type].socket;
+        }
+      }
+      
+      debugLog(`[数据处理] 组件 ${type} 标准化完成:`, standardized[type]);
+    });
+    
+    return standardized;
+  },
+  
+  /**
+   * 确保所有组件类型的品牌选项都初始化
+   */
+  ensureAllBrandOptions: function() {
+    debugLog('[品牌初始化] 确保所有组件品牌选项');
+    
+    // 确保brandOptions初始化
+    if (!this.data.brandOptions) {
+      this.setData({
+        brandOptions: {}
+      });
+    }
+    
+    const brandOptions = {...this.data.brandOptions};
+    
+    // 确保CPU品牌包含基本选项
+    if (!brandOptions.cpu || !Array.isArray(brandOptions.cpu) || brandOptions.cpu.length < 2) {
+      brandOptions.cpu = ['英特尔', 'AMD'];
+      debugLog('[品牌初始化] 初始化CPU品牌选项');
+    }
+    
+    // 确保其他组件类型也有基本品牌选项
+    const defaultBrands = {
+      motherboard: ['华硕', '微星', '技嘉', '华擎'],
+      ram: ['英睿达', '海盗船', '金士顿', '芝奇'],
+      gpu: ['英伟达', 'AMD', '华硕', '微星'],
+      storage: ['三星', '西数', '希捷', '英特尔'],
+      psu: ['海韵', '华硕', '微星', '酷冷至尊'],
+      case: ['恩杰', '联力', '酷冷至尊', '安钛克'],
+      cooling: ['九州风神', '华硕', '微星', '酷冷至尊']
+    };
+    
+    // 为每种组件类型设置默认品牌选项（如果不存在）
+    Object.keys(defaultBrands).forEach(type => {
+      if (!brandOptions[type] || !Array.isArray(brandOptions[type]) || brandOptions[type].length === 0) {
+        brandOptions[type] = defaultBrands[type];
+        debugLog(`[品牌初始化] 初始化${type}品牌选项:`, brandOptions[type]);
+      }
+    });
+    
+    // 更新品牌选项
+    this.setData({ brandOptions });
+  },
+  
+  /**
+   * 初始化组件显示 - 确保组件显示正确
+   */
+  initializeComponentDisplay: function() {
+    debugLog('[组件显示] 初始化组件显示');
+    
+    // 确保当前组件类型有效
+    const componentType = this.data.currentComponent || 'cpu';
+    
+    // 重新加载当前组件数据
+    this.loadComponentsByType(componentType);
+    
+    // 确保品牌选项已初始化
+    this.ensureAllBrandOptions();
+    
+    // 确保筛选条件重置
+    this.setData({
+      currentBrand: 'all',
+      currentPrice: 'all',
+      currentPriceSort: 'asc',
+      currentCoolingType: 'all'
+    });
+    
+    debugLog(`[组件显示] 初始化完成，当前组件类型: ${componentType}`);
   },
 
   /**
@@ -627,29 +947,34 @@ Page({
   ensureCpuBrands: function() {
     // 确保brandOptions初始化
     if (!this.data.brandOptions) {
-      this.setData({
+    this.setData({
         brandOptions: {}
       });
     }
     
     // 确保CPU品牌选项包含基本的两个品牌，使用中文名称
     if (!this.data.brandOptions.cpu || !Array.isArray(this.data.brandOptions.cpu) || this.data.brandOptions.cpu.length < 2) {
-      console.log('初始化CPU品牌选项为默认值');
+      debugLog('初始化CPU品牌选项为默认值');
       
       // 使用setData创建或更新cpu品牌选项，使用中文名称
       const updatedBrandOptions = {...this.data.brandOptions};
       updatedBrandOptions.cpu = ['英特尔', 'AMD'];
       
-      this.setData({
+    this.setData({
         brandOptions: updatedBrandOptions
-      });
+    });
     }
   },
 
   /**
    * 加载组件数据 - 改为懒加载模式
    */
-  loadComponentData: function() {
+  loadComponentData: function(componentType) {
+    // 如果没有传入组件类型，使用当前选择的组件类型
+    componentType = componentType || this.data.currentComponent;
+    
+    debugLog(`[数据追踪] 加载组件数据: ${componentType}`);
+    
     // 显示加载中提示
     wx.showLoading({
       title: '加载数据中',
@@ -669,7 +994,7 @@ Page({
     
     // 初始化云环境
     wx.cloud.init({
-      env: 'pcconfig-7grn6s1naf2b91d9',  // 使用正确的云环境ID
+      env: 'your-cloud-env-id',  // 使用正确的云环境ID
       traceUser: true
     });
     
@@ -685,7 +1010,7 @@ Page({
     
     // 创建Promise数组来并行加载所有组件的品牌统计
     const loadPromises = componentTypes.map(type => {
-      console.log(`正在加载${type}品牌统计数据...`);
+      debugLog(`正在加载${type}品牌统计数据...`);
       
       // 调用云函数获取品牌统计
       return wx.cloud.callFunction({
@@ -696,7 +1021,7 @@ Page({
         }
       })
       .then(res => {
-        console.log(`获取${type}品牌统计成功:`, res.result);
+        debugLog(`获取${type}品牌统计成功:`, res.result);
         
         if (res.result && res.result.code === 0 && res.result.data) {
           const brands = res.result.data.brands || [];
@@ -714,7 +1039,7 @@ Page({
             if (!hasIntel) brandOptions[type].push('英特尔');
             if (!hasAMD) brandOptions[type].push('AMD');
             
-            console.log(`CPU品牌列表: ${brandOptions[type].join(', ')}`);
+            debugLog(`CPU品牌列表: ${brandOptions[type].join(', ')}`);
           }
           
           return { type, brandOptions: brandOptions[type] };
@@ -732,7 +1057,7 @@ Page({
     // 等待所有Promise完成
     Promise.all(loadPromises)
       .then(results => {
-        console.log('所有组件品牌统计加载完成');
+        debugLog('所有组件品牌统计加载完成');
         
         // 清除超时保护
         clearTimeout(loadingTimeout);
@@ -746,7 +1071,7 @@ Page({
           
           // 确保CPU品牌选项包含英特尔和AMD
           if (!brandOptions.cpu || brandOptions.cpu.length < 2) {
-            console.log('自动补充CPU基本品牌选项');
+            debugLog('自动补充CPU基本品牌选项');
             brandOptions.cpu = ['英特尔', 'AMD'];
           }
           
@@ -792,181 +1117,312 @@ Page({
   /**
    * 根据组件类型加载数据
    */
-  loadComponentsByType: function(componentType, brand = 'all') {
-    console.log(`[数据加载] 开始从云端加载 ${componentType} 类型的 ${brand} 品牌数据`);
+  loadComponentsByType: function(componentType) {
+    debugLog(`[数据追踪] 加载组件类型: ${componentType}`);
     
-    // 返回Promise以便链式处理
-    return new Promise((resolve, reject) => {
-      // 检查是否该品牌的组件已经被标记为无数据
-      const noDataKey = `${componentType}_${brand}_noData`;
-      if (this.data[noDataKey]) {
-        console.log(`[数据加载] ${componentType}的${brand}品牌已被标记为无数据，跳过请求`);
-        wx.showToast({
-          title: `暂无${brand === 'all' ? '' : brand}品牌的${componentType}数据`,
-          icon: 'none',
-          duration: 2000
+    // 特殊处理caseFan类型 - 需要从cooling中获取数据
+    if (componentType === 'caseFan') {
+      // 如果机箱风扇数据已经加载，直接使用
+      if (this.data.components.caseFan && this.data.components.caseFan.length > 0) {
+        debugLog(`[数据追踪] 使用缓存的机箱风扇数据, 共${this.data.components.caseFan.length}个`);
+        
+        // 创建组件列表的副本
+        let components = [...this.data.components.caseFan];
+        
+        this.setData({
+          filteredComponents: components,
+          filteredComponentsCount: components.length
         });
-        resolve([]);
+        
+        // 应用筛选逻辑
+        this.filterComponents();
         return;
       }
       
-      // 显示加载中提示
-    wx.showLoading({
-        title: '加载数据中...',
-      mask: true
-    });
-    
-      // 构建完整的请求参数
-      const requestData = {
-        componentType: componentType,
-        brand: brand, // 传递品牌参数到云函数
-        limit: 50,    // 限制返回的数据量，防止请求过大
-        fetchAll: brand === 'all' // 如果是获取所有品牌，设置fetchAll标志
-      };
+      // 如果cooling数据已经加载，从中提取caseFan数据
+      if (this.data.components.cooling && this.data.components.cooling.length > 0) {
+        debugLog(`[数据追踪] 从已加载的cooling数据中提取机箱风扇`);
+        
+        // 从散热器数据中筛选出机箱风扇
+        const caseFans = this.data.components.cooling.filter(item => {
+          const itemType = item['散热形式'] || item['类型'] || item.type || '';
+          const itemName = item['名称'] || item.name || '';
+          
+          // 明确是机箱风扇的情况
+          if (itemType === '机箱风扇' || itemName.includes('机箱风扇')) {
+            return true;
+          }
+          
+          // 排除明确不是机箱风扇的情况
+          if (itemName.includes('水冷') || 
+              itemName.includes('CPU') || 
+              itemName.includes('散热器') || 
+              itemName.includes('一体式') || 
+              itemName.includes('AIO') ||
+              // 排除水冷相关词汇
+              itemName.includes('冰岩') || 
+              itemName.includes('水泵') ||
+              // 排除特定产品名
+              itemName.includes('利民') && itemName.includes('FW') ||
+              // 排除含"无风扇"但实际是水冷的产品
+              itemName.includes('无风扇') && 
+                (itemType === '水冷' || itemName.includes('雪冰岩'))) {
+            return false;
+          }
+          
+          // 其他含有"风扇"字样的产品视为机箱风扇
+          return itemName.includes('风扇');
+        });
+        
+        // 更新本地数据
+        this.setData({
+          'components.caseFan': caseFans,
+          filteredComponents: caseFans,
+          filteredComponentsCount: caseFans.length
+        });
+        
+        debugLog(`[数据追踪] 已提取${caseFans.length}个机箱风扇`);
+        
+        // 应用筛选逻辑
+        this.filterComponents();
+        return;
+      }
       
-      console.log(`[数据加载] 发送请求参数:`, requestData);
+      // 如果cooling数据还没加载，先加载cooling数据
+      debugLog(`[数据追踪] 需要先加载cooling数据`);
       
-      // 调用云函数获取组件数据
+      // 显示加载提示
+      wx.showLoading({
+        title: '加载散热组件数据...',
+        mask: true
+      });
+      
+      // 调用云函数获取cooling组件数据
       wx.cloud.callFunction({
         name: 'getComponentsData',
-        data: requestData,
-        success: res => {
-          console.log(`[数据加载] 获取${componentType}数据成功，状态码:`, res.result?.code);
+        data: {
+          componentType: 'cooler',  // cooling对应的云函数类型是cooler
+          brand: 'all',
+          limit: 10000,
+          fetchAll: true
+        }
+      })
+      .then(res => {
+        wx.hideLoading();
+        
+        if (res.result && res.result.data) {
+          const allCoolers = res.result.data;
+          debugLog(`[数据追踪] 成功加载${allCoolers.length}个散热组件`);
           
-          if (res.result && res.result.data && Array.isArray(res.result.data)) {
-            // 在控制台详细输出数据内容进行调试
-            console.log(`[数据加载] 云函数返回的数据条数: ${res.result.data.length}`);
+          // 筛选出机箱风扇
+          const caseFans = allCoolers.filter(item => {
+            const itemType = item['散热形式'] || item['类型'] || item.type || '';
+            const itemName = item['名称'] || item.name || '';
             
-            // 检查是否返回了空数据
-            if (res.result.data.length === 0) {
-              console.warn(`[数据加载] 云函数返回了空数组，没有${componentType}的${brand}品牌数据`);
-              
-              // 标记该品牌的组件没有数据，避免重复请求
-              const updateObj = {};
-              updateObj[noDataKey] = true;
-              this.setData(updateObj);
-              
-              // 显示提示
-              wx.hideLoading();
-              wx.showToast({
-                title: `暂无${brand === 'all' ? '' : brand}品牌的${componentType}数据`,
-                icon: 'none',
-                duration: 2000
-              });
-              
-              // 如果没有数据，尝试切换到其他品牌
-              if (brand !== 'all') {
-                // 选择其他可用品牌
-                const brandOptions = this.data.brandOptions[componentType] || [];
-                const otherBrands = brandOptions.filter(b => b !== brand);
-                
-                if (otherBrands.length > 0) {
-                  const newBrand = otherBrands[0];
-                  console.log(`[数据加载] 自动切换到${newBrand}品牌`);
-                  this.setData({ currentBrand: newBrand });
-                  
-                  // 检查是否已加载过该品牌的数据
-                  if (this.data.components[componentType] && this.data.components[componentType].some(item => item.brand === newBrand)) {
-                    this.filterComponents();
-                  } else {
-                    this.loadComponentsByType(componentType, newBrand);
-                  }
-                }
-              }
-              
-              resolve([]);
+            // 明确是机箱风扇的情况
+            if (itemType === '机箱风扇' || itemName.includes('机箱风扇')) {
+              return true;
+            }
+            
+            // 排除明确不是机箱风扇的情况
+            if (itemName.includes('水冷') || 
+                itemName.includes('CPU') || 
+                itemName.includes('散热器') || 
+                itemName.includes('一体式') || 
+                itemName.includes('AIO') ||
+                // 排除水冷相关词汇
+                itemName.includes('冰岩') || 
+                itemName.includes('水泵') ||
+                // 排除特定产品名
+                itemName.includes('利民') && itemName.includes('FW') ||
+                // 排除含"无风扇"但实际是水冷的产品
+                itemName.includes('无风扇') && 
+                  (itemType === '水冷' || itemName.includes('雪冰岩'))) {
+              return false;
+            }
+            
+            // 其他含有"风扇"字样的产品视为机箱风扇
+            return itemName.includes('风扇');
+          });
+          
+          debugLog(`[数据追踪] 从中提取出${caseFans.length}个机箱风扇`);
+          
+          // 保存数据
+          this.setData({
+            'components.cooling': allCoolers,
+            'components.caseFan': caseFans,
+            filteredComponents: caseFans,
+            filteredComponentsCount: caseFans.length
+          });
+          
+          // 提取品牌列表
+          this.extractBrands('cooling', allCoolers);
+          this.extractBrands('caseFan', caseFans);
+          
+          // 应用筛选逻辑
+          this.filterComponents();
+        } else {
+          console.error('[数据追踪] 获取散热器数据失败:', res);
+          
+          // 初始化为空数组，避免后续错误
+          this.setData({
+            'components.caseFan': [],
+            filteredComponents: [],
+            filteredComponentsCount: 0
+          });
+          
+          wx.showToast({
+            title: '加载散热器数据失败',
+            icon: 'none',
+            duration: 2000
+          });
+        }
+      })
+      .catch(err => {
+        wx.hideLoading();
+        console.error('[数据追踪] 获取散热器数据异常:', err);
+        
+        // 初始化为空数组，避免后续错误
+        this.setData({
+          'components.caseFan': [],
+          filteredComponents: [],
+          filteredComponentsCount: 0
+        });
+        
+        wx.showToast({
+          title: '加载散热器数据出错',
+          icon: 'none',
+          duration: 2000
+        });
+      });
+      
       return;
     }
     
-            if (res.result.data.length > 0) {
-              console.log(`[数据加载] 第一条数据样本:`, res.result.data[0]);
-              
-              // 特别处理CPU品牌分布统计
-              if (componentType === 'cpu') {
-                const brandCount = {};
-                res.result.data.forEach(item => {
-                  const cpuBrand = (item.brand || item.品牌 || '').toLowerCase();
-                  brandCount[cpuBrand] = (brandCount[cpuBrand] || 0) + 1;
-                });
-                console.log(`[数据加载] CPU品牌分布:`, brandCount);
-              }
-            }
-            
-            // 格式化数据，确保符合前端期望的格式
-            const formattedData = this.formatComponentData(componentType, res.result.data);
-            console.log(`[数据加载] 格式化后的数据条数: ${formattedData.length}`);
-            
-            if (formattedData.length > 0) {
-              // 记录品牌信息
-              const brands = new Set();
-              formattedData.forEach(item => {
-                if (item.brand) brands.add(item.brand);
-              });
-              console.log(`[数据加载] 检测到的品牌: ${Array.from(brands).join(', ')}`);
-            }
-            
-            // 更新数据集
-            const componentsData = this.data.components;
-            componentsData[componentType] = formattedData;
-            
-            // 确保有品牌选项
-            let brandsList = res.result.brands || this.data.brandOptions[componentType] || [];
-            
-            // 确保CPU类型总是包含英特尔和AMD
-            if (componentType === 'cpu' && brandsList.length > 0) {
-              if (!brandsList.includes('英特尔')) brandsList.push('英特尔');
-              if (!brandsList.includes('AMD')) brandsList.push('AMD');
-            }
-            
-            this.setData({
-              components: componentsData,
-              [`brandOptions.${componentType}`]: brandsList
-            });
-            
-            // 根据新数据筛选组件
-            this.filterComponents();
-            
-            // 隐藏加载中提示
-            wx.hideLoading();
-            
-            // 如果数据为空，显示提示
-            if (formattedData.length === 0) {
-        wx.showToast({
-                title: `未找到${brand === 'all' ? '' : brand}品牌的${componentType}数据`,
-          icon: 'none',
-                duration: 2000
-        });
-            }
-            
-            // 返回结果数据
-            resolve(formattedData);
-      } else {
-            console.error(`[数据加载] ${componentType}数据结构异常:`, res.result);
-            wx.hideLoading();
-        wx.showToast({
-              title: '数据格式异常',
-          icon: 'none'
-        });
-            reject(new Error('数据结构异常'));
-          }
-        },
-        fail: err => {
-          console.error(`[数据加载] 获取${componentType}数据失败:`, err);
-          wx.hideLoading();
-        wx.showToast({
-            title: '数据加载失败',
-          icon: 'none'
-        });
-          reject(err);
+    // 以下是常规组件的处理逻辑（非caseFan）
+    // 如果已经加载了该类型的组件数据，直接使用缓存
+    if (this.data.components[componentType] && this.data.components[componentType].length > 0) {
+      debugLog(`[数据追踪] 使用缓存数据, 共${this.data.components[componentType].length}个`);
+      
+      // 创建组件列表的副本，避免直接修改原始数据
+      let components = [...this.data.components[componentType]];
+      
+      // 检查是否有已选择的当前类型组件，如果有，将其排在最前面
+      const selectedItem = this.data.selectedItems[componentType];
+      if (selectedItem) {
+        debugLog(`[数据追踪] 发现已选择的${componentType}组件，将其排在列表最前面`);
+        
+        // 从组件列表中移除已选择的组件（如果存在）
+        const selectedItemIndex = components.findIndex(item => item.id === selectedItem.id);
+        if (selectedItemIndex >= 0) {
+          const selectedItemInList = components.splice(selectedItemIndex, 1)[0];
+          
+          // 将已选择的组件添加到列表最前面
+          components.unshift(selectedItemInList);
+          
+          debugLog(`[数据追踪] 已将选择的组件移到列表第一位`);
+        } else {
+          debugLog(`[数据追踪] 已选择的组件不在当前组件列表中`);
         }
+      }
+      
+      this.setData({
+        filteredComponents: components,
+        filteredComponentsCount: components.length
+      });
+      
+      // 应用筛选逻辑 - filterComponents会根据是否有已选组件自动选择合适的筛选方式
+      this.filterComponents();
+      return;
+    }
+    
+    // 显示加载提示
+    wx.showLoading({
+      title: '加载组件数据...',
+      mask: true
+    });
+    
+    // 将前端组件类型转换为云函数期望的类型
+    let cloudComponentType = componentType;
+    if (cloudComponentType === 'ram') cloudComponentType = 'memory';
+    if (cloudComponentType === 'cooling') cloudComponentType = 'cooler';
+    if (cloudComponentType === 'storage') cloudComponentType = 'disk';
+    if (cloudComponentType === 'psu') cloudComponentType = 'power';
+    
+    // 将数据限制修改为非常大的值，确保获取全部数据
+    let dataLimit = 10000; // 将默认限制改为10000条
+    
+    debugLog(`[数据追踪] 调用云函数参数: componentType=${cloudComponentType}, limit=${dataLimit}`);
+    
+    // 调用云函数获取组件数据
+    wx.cloud.callFunction({
+      name: 'getComponentsData',
+      data: {
+        componentType: cloudComponentType,
+        brand: 'all',  // 在云函数端不做品牌过滤，返回所有数据
+        limit: dataLimit, // 设置非常大的数据限制
+        fetchAll: true    // 尝试获取所有数据
+      }
+    })
+    .then(res => {
+      wx.hideLoading();
+      
+      debugLog(`[数据追踪] 云函数返回${componentType}数据: ${res.result.data.length}条`);
+      
+      if (res.result && res.result.data) {
+        // 初始化组件数据
+        if (!this.data.components) {
+          this.setData({
+            components: {}
+          });
+        }
+        
+        // 存储原始组件数据
+        let componentsData = res.result.data;
+        let componentsUpdate = {};
+        componentsUpdate[`components.${componentType}`] = componentsData;
+        
+        // 获取已选组件ID（如果有）
+        const selectedItem = this.data.selectedItems[componentType];
+        const selectedId = selectedItem ? selectedItem.id : null;
+        
+        // 移除直接排序代码，只更新原始数据
+        this.setData({
+          ...componentsUpdate
+        });
+        
+        // 提取品牌列表
+        this.extractBrands(componentType, res.result.data);
+        
+        // 应用筛选逻辑 - filterComponents会根据是否有已选组件自动选择合适的筛选方式
+        this.filterComponents();
+      } else {
+        console.error(`[数据追踪] 获取${componentType}数据失败:`, res);
+        wx.showToast({
+          title: '加载组件数据失败',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+    })
+    .catch(err => {
+      wx.hideLoading();
+      console.error(`[数据追踪] 获取${componentType}数据异常:`, err);
+      wx.showToast({
+        title: '加载组件数据出错',
+        icon: 'none',
+        duration: 2000
       });
     });
   },
-  
+
   /**
    * 格式化从数据库获取的组件数据，确保字段名一致
+   * @param {Array} data - 组件数据数组
+   * @param {string} type - 组件类型
+   * @returns {Array} 格式化后的数据
    */
-  formatComponentData: function(type, data) {
+  formatComponentData: function(data, type) {
     // 检查数据是否为空
     if (!data || !Array.isArray(data) || data.length === 0) {
       console.warn(`[配置] 格式化${type}组件时数据为空`);
@@ -975,14 +1431,23 @@ Page({
     
     // 如果数据已经被云函数格式化，直接返回
     if (data[0].specs && Array.isArray(data[0].specs)) {
-      console.log(`[配置] ${type}数据已由云函数格式化，直接使用`);
+      debugLog(`[配置] ${type}数据已由云函数格式化，直接使用`);
       
-      // 如果是GPU组件，排序规格
+      // 如果是GPU组件，排序规格并确保showMoreSpecs属性存在
       if (type === 'gpu') {
+        debugLog(`[配置] 应用GPU规格排序优化`);
         return data.map(item => {
+          // 排序规格
           if (item.specs && Array.isArray(item.specs)) {
             item.specs = this.sortGpuSpecs(item.specs);
+            debugLog(`[配置] GPU ${item.name} 规格排序后:`, item.specs.slice(0, 3).map(s => s.label));
           }
+          
+          // 确保showMoreSpecs属性存在
+          if (typeof item.showMoreSpecs === 'undefined') {
+            item.showMoreSpecs = false;
+          }
+          
           return item;
         });
       }
@@ -990,13 +1455,33 @@ Page({
       return data;
     }
     
-    console.log(`开始格式化${type}数据，共${data.length}条`);
+    debugLog(`开始格式化${type}数据，共${data.length}条`);
     
     try {
       // 检查数据是否已经被云函数标准化处理过
       if (data[0] && data[0].specs && Array.isArray(data[0].specs) && data[0].rawData) {
-        console.log(`[格式化] ${type}数据已在云函数中格式化，保持原格式`);
-        // 只确保每个组件有唯一ID和类型字段
+        debugLog(`[格式化] ${type}数据已在云函数中格式化，保持原格式`);
+        // 对于GPU类型，我们需要确保应用排序
+        if (type === 'gpu') {
+          debugLog(`[格式化] 对GPU数据应用规格排序`);
+          return data.map(item => {
+            const result = {
+              ...item,
+              id: item.id || item._id || ('unknown_' + Math.random().toString(36).substr(2, 9)),
+              type: type,
+              showMoreSpecs: false
+            };
+            
+            // 排序规格
+            if (result.specs && Array.isArray(result.specs)) {
+              result.specs = this.sortGpuSpecs(result.specs);
+            }
+            
+            return result;
+          });
+        }
+        
+        // 对于非GPU类型，只确保每个组件有唯一ID和类型字段
         return data.map(item => ({
           ...item,
           id: item.id || item._id || ('unknown_' + Math.random().toString(36).substr(2, 9)),
@@ -1011,7 +1496,7 @@ Page({
           return data.map(item => {
             // 打印样本数据进行调试
             if (data.indexOf(item) < 3) {
-              console.log(`CPU原始数据示例:`, item);
+              debugLog(`CPU原始数据示例:`, item);
             }
             
             try {
@@ -1094,6 +1579,49 @@ Page({
             }
           });
         
+        // 添加GPU特定处理
+        case 'gpu':
+          return data.map(item => {
+            try {
+              const result = {
+                id: item.id || item._id || '',
+                name: item.name || item.名称 || item.型号 || '',
+                brand: item.brand || item.品牌 || '',
+                price: typeof item.price === 'number' ? item.price : 
+                      typeof item.价格 === 'number' ? item.价格 : 
+                      parseFloat(item.price || item.价格 || '0') || 0,
+                specs: [
+                  { label: '显存', value: item.vram || item.显存 || item.memory || '' },
+                  { label: '显存类型', value: item.vram_type || item.显存类型 || item.memory_type || '' },
+                  { label: '核心频率', value: item.core_clock || item.核心频率 || '' },
+                  { label: '功耗', value: item.tdp || item.功耗 || item.power || '' },
+                  { label: '接口', value: item.interface || item.接口 || '' },
+                  { label: '长度', value: item.length || item.长度 || item.size || '' }
+                ].filter(spec => spec.value),
+                type: 'gpu',
+                rawData: item,
+                showMoreSpecs: false
+              };
+              
+              // 应用规格排序
+              result.specs = this.sortGpuSpecs(result.specs);
+              
+              return result;
+            } catch (err) {
+              console.error(`处理GPU项目时出错:`, err, item);
+              return {
+                id: item.id || item._id || 'unknown',
+                name: item.name || item.名称 || 'GPU数据处理错误',
+                brand: item.brand || item.品牌 || '',
+                price: 0,
+                specs: [],
+                type: 'gpu',
+                rawData: item,
+                showMoreSpecs: false
+              };
+            }
+          });
+        
         // 处理其他组件类型...
         default:
           // 通用处理方式，尝试提取基本字段
@@ -1138,508 +1666,829 @@ Page({
   },
   
   /**
-   * 筛选组件
+   * 筛选组件 - 根据品牌和价格范围
    */
-  filterComponents: function() {
-    let { components, currentComponent, currentBrand, currentPrice } = this.data;
-    
-    console.log(`[筛选] 开始筛选组件 (类型: ${currentComponent}, 品牌: ${currentBrand}, 价格: ${currentPrice})`);
-    
-    // 首先检查该品牌是否被标记为无数据
-    const noDataKey = `${currentComponent}_${currentBrand}_noData`;
-    if (this.data[noDataKey]) {
-      console.warn(`[筛选] ${currentComponent}的${currentBrand}品牌已被标记为无数据`);
-      
-      // 尝试自动切换到其他品牌
-      const brandOptions = this.data.brandOptions[currentComponent] || [];
-      const otherBrands = brandOptions.filter(b => b !== currentBrand);
-      
-      if (otherBrands.length > 0) {
-        const newBrand = otherBrands[0];
-        console.log(`[筛选] 由于无数据，自动切换到${newBrand}品牌`);
-        
-        this.setData({
-          currentBrand: newBrand,
-          filteredComponents: [],
-          filteredComponentsCount: 0
-        });
-        
-        // 检查是否已加载过该品牌的数据
-        const hasData = components[currentComponent] && 
-                       Array.isArray(components[currentComponent]) && 
-                       components[currentComponent].some(item => item.brand === newBrand);
-        
-        if (hasData) {
-          // 重新筛选
-          setTimeout(() => this.filterComponents(), 0);
-    } else {
-          // 加载新品牌数据
-          this.loadComponentsByType(currentComponent, newBrand);
-        }
-      } else {
-        // 没有其他品牌可选，显示空结果
-    this.setData({
-          filteredComponents: [],
-          filteredComponentsCount: 0
-        });
-        
-      wx.showToast({
-          title: `没有找到${currentComponent}数据`,
-          icon: 'none',
-          duration: 2000
-      });
-      }
+  filterComponents: function(skipCompatibilityCheck) {
+    // 防止在onLoad阶段还没有组件数据时调用
+    if (!this.data.components || !this.data.components[this.data.currentComponent]) {
+      debugLog('[筛选函数] 当前没有组件数据，跳过筛选');
       return;
     }
     
-    // 检查组件数据是否存在
-    if (!components[currentComponent] || !Array.isArray(components[currentComponent]) || components[currentComponent].length === 0) {
-      console.warn(`[筛选] 没有${currentComponent}数据可筛选，尝试加载数据`);
-        this.setData({
-        filteredComponents: [],
-        filteredComponentsCount: 0
-      });
-      
-      // 如果没有数据，尝试加载默认品牌的数据
-      if (currentBrand !== 'all') {
-        console.log(`[筛选] 尝试加载${currentComponent}的${currentBrand}品牌数据`);
-        this.loadComponentsByType(currentComponent, currentBrand);
-      } else {
-        // 如果仍然使用'all'，则尝试选择一个默认品牌
-        let defaultBrand = currentComponent === 'cpu' ? '英特尔' : 
-                          (this.data.brandOptions[currentComponent] && 
-                           this.data.brandOptions[currentComponent].length > 0 ? 
-                           this.data.brandOptions[currentComponent][0] : null);
-        
-        if (defaultBrand) {
-          console.log(`[筛选] 自动选择默认品牌: ${defaultBrand}`);
-          this.setData({ currentBrand: defaultBrand });
-          this.loadComponentsByType(currentComponent, defaultBrand);
+    debugLog(`[筛选函数] 开始筛选${this.data.currentComponent}组件`);
+    debugLog(`[筛选函数] 品牌: ${this.data.currentBrand}, 价格: ${this.data.currentPrice}`);
+    
+    // 获取当前组件类型的所有组件
+    const allComponents = this.data.components[this.data.currentComponent];
+    coolingLog(`初始组件数量: ${allComponents.length}`);
+    
+    // 应用品牌筛选
+    let filteredByBrand = allComponents;
+    if (this.data.currentBrand !== 'all') {
+      filteredByBrand = this.filterComponentsByBrand(allComponents, this.data.currentBrand);
+      coolingLog(`品牌筛选后数量: ${filteredByBrand.length}`);
+    }
+    
+    // 应用价格筛选
+    let filteredByPrice = filteredByBrand;
+    if (this.data.currentPrice !== 'all') {
+      filteredByPrice = this.filterComponentsByPrice(filteredByBrand, this.data.currentPrice);
+      coolingLog(`价格筛选后数量: ${filteredByPrice.length}`);
+    }
+    
+    // 应用搜索关键词筛选
+    let filteredBySearch = filteredByPrice;
+    if (this.data.searchKeyword && this.data.searchKeyword.trim() !== '') {
+      filteredBySearch = this.filterComponentsByKeyword(filteredByPrice, this.data.searchKeyword);
+      debugLog(`[筛选函数] 关键词筛选后数量: ${filteredBySearch.length}`);
+    }
+    
+    // 最终筛选结果，使用搜索关键词筛选后的结果
+    let finalComponents = filteredBySearch;
+    
+    // 判断是否需要应用兼容性筛选
+    if (this.data.onlyShowCompatible && !skipCompatibilityCheck && 
+        this.data.selectedItems && Object.keys(this.data.selectedItems).length > 0) {
+      debugLog('[筛选函数] 执行兼容性筛选');
+      // 在兼容性筛选函数中传递filteredBySearch，使其基于搜索结果筛选
+      this.applyCompatibilityFilter(filteredBySearch);
     } else {
-          console.warn(`[筛选] 无法确定默认品牌，尝试加载所有数据`);
-          this.loadComponentsByType(currentComponent, 'all');
-        }
-      }
-      return;
-    }
-    
-    // 显示初始数据情况
-    const originalData = components[currentComponent];
-    console.log(`[筛选] 筛选前 ${currentComponent} 总数量: ${originalData.length}`);
-    
-    if (originalData.length > 0) {
-      // 输出一些样本数据进行调试
-      console.log('[筛选] 数据样本:', originalData.slice(0, 2));
-    } else {
-      console.warn(`[筛选] ${currentComponent}数据为空数组，无法筛选`);
-      return;
-    }
-    
-    // 如果是CPU，额外显示品牌分布
-    if (currentComponent === 'cpu') {
-      // 统计主要品牌
-          const brandStats = {};
-      originalData.forEach(item => {
-        const brand = (item.brand || '').toLowerCase();
-            brandStats[brand] = (brandStats[brand] || 0) + 1;
-          });
+      debugLog('[筛选函数] 跳过兼容性筛选');
       
-      console.log(`[筛选] CPU品牌统计:`, brandStats);
+      // 检查是否已有该类型选中的组件，有就置顶
+      const currentType = this.data.currentComponent;
+      const selectedItem = this.data.selectedItems[currentType];
+      const selectedId = selectedItem ? selectedItem.id : null;
       
-      // 检查是否有AMD和Intel的数据
-      const amdCount = originalData.filter(item => 
-        (item.brand || '').toLowerCase() === 'amd' || 
-        ((item.name || '').toLowerCase().includes('amd') || 
-         (item.name || '').toLowerCase().includes('ryzen'))
-      ).length;
+      // 应用价格排序
+      let finalFiltered = this.sortComponentsByPrice(finalComponents, this.data.currentPriceSort, selectedId);
+      debugLog(`[筛选函数] 应用价格${this.data.currentPriceSort === 'asc' ? '升序' : '降序'}排序`);
       
-      const intelCount = originalData.filter(item => 
-        (item.brand || '').toLowerCase() === 'intel' || 
-        (item.brand || '') === '英特尔' ||
-        ((item.name || '').toLowerCase().includes('intel') || 
-         (item.name || '').toLowerCase().includes('酷睿'))
-      ).length;
+      // 保存完整的筛选结果
+      const totalCount = finalFiltered.length;
       
-      console.log(`[筛选] 检测到 AMD CPU: ${amdCount}个, Intel CPU: ${intelCount}个`);
-    }
-    
-    let filtered = [...(components[currentComponent] || [])];
-    
-    // 输出筛选前的数量
-    console.log(`[筛选] 筛选前 ${currentComponent} 数量: ${filtered.length}`);
-    
-    // 品牌筛选 - 只有当品牌不是"all"时才需要筛选
-    if (currentBrand !== 'all') {
-      console.log(`[筛选] 按品牌筛选: ${currentBrand}`);
+      // 只显示前N条
+      const displayItems = finalFiltered.slice(0, this.data.displayedCount);
       
-      // 使用适当的匹配函数进行品牌筛选
-      const beforeFilterCount = filtered.length;
-      filtered = filtered.filter(item => {
-        let match = false;
-        
-        if (currentComponent === 'cpu') {
-          // 使用专门的CPU品牌匹配函数
-          match = this.data.componentBrandUtils.cpu.matchBrand(item, currentBrand);
-    } else {
-          // 使用通用品牌匹配逻辑
-          const brandUtil = this.data.componentBrandUtils[currentComponent] || this.data.componentBrandUtils.common;
-          match = brandUtil.matchBrand(item, currentBrand);
-        }
-        
-        // 对于难以匹配的项目，尝试直接比较品牌名称（不区分大小写）
-        if (!match && item.brand && currentBrand) {
-          match = item.brand.toLowerCase() === currentBrand.toLowerCase() ||
-                 item.brand.toLowerCase().includes(currentBrand.toLowerCase()) ||
-                 currentBrand.toLowerCase().includes(item.brand.toLowerCase());
-        }
-        
-        return match;
-      });
-      
-      console.log(`[筛选] 品牌筛选后数量: ${filtered.length}/${beforeFilterCount}`);
-      
-      // 如果品牌筛选后数量为0，尝试更宽松的匹配
-      if (filtered.length === 0 && components[currentComponent].length > 0) {
-        console.log(`[筛选] 品牌筛选结果为空，尝试使用更宽松的匹配方式`);
-        
-        // 对CPU进行特殊处理
-        if (currentComponent === 'cpu') {
-          if (currentBrand === '英特尔' || currentBrand.toLowerCase() === 'intel') {
-            filtered = components[currentComponent].filter(item => 
-              (item.name && (
-                item.name.toLowerCase().includes('intel') ||
-                item.name.toLowerCase().includes('i3') ||
-                item.name.toLowerCase().includes('i5') ||
-                item.name.toLowerCase().includes('i7') ||
-                item.name.toLowerCase().includes('i9') ||
-                item.name.toLowerCase().includes('酷睿') ||
-                item.name.toLowerCase().includes('奔腾') ||
-                item.name.toLowerCase().includes('赛扬')
-              )) || 
-              (item.brand && (
-                item.brand.toLowerCase().includes('intel') ||
-                item.brand.toLowerCase() === '英特尔'
-              ))
-            );
-          } else if (currentBrand === 'AMD') {
-            filtered = components[currentComponent].filter(item => 
-              (item.name && (
-                item.name.toLowerCase().includes('amd') ||
-                item.name.toLowerCase().includes('ryzen') ||
-                item.name.toLowerCase().includes('锐龙') ||
-                item.name.toLowerCase().includes('r3') ||
-                item.name.toLowerCase().includes('r5') ||
-                item.name.toLowerCase().includes('r7') ||
-                item.name.toLowerCase().includes('r9')
-              )) || 
-              (item.brand && (
-                item.brand.toLowerCase().includes('amd')
-              ))
-            );
-          }
-        }
-        
-        console.log(`[筛选] 宽松匹配后数量: ${filtered.length}`);
-      }
-    }
-    
-    // 按价格筛选
-    if (currentPrice !== 'all') {
-      const [minPrice, maxPrice] = this.getPriceRange(currentPrice);
-      const beforePriceFilter = filtered.length;
-      filtered = filtered.filter(item => 
-        item.price >= minPrice && (maxPrice === 0 || item.price <= maxPrice)
-      );
-      console.log(`[筛选] 价格筛选后数量: ${filtered.length}/${beforePriceFilter}`);
-    }
-    
-    console.log(`[筛选] 最终筛选后的${currentComponent}数量: ${filtered.length}`);
-    
-    // 如果筛选后没有数据，尝试切换到另一个品牌
-    if (filtered.length === 0 && currentBrand !== 'all') {
-      console.log(`[筛选] ${currentBrand}品牌没有${currentComponent}数据，尝试其他品牌`);
-      
-      // 显示没有数据的提示
-      wx.showToast({
-        title: `未找到${currentBrand}品牌的${currentComponent}`,
-        icon: 'none',
-        duration: 2000
-      });
-      
-      // 如果是CPU且当前品牌是英特尔，尝试切换到AMD
-      if (currentComponent === 'cpu' && (currentBrand === '英特尔' || currentBrand.toLowerCase() === 'intel')) {
-        console.log(`[筛选] 尝试切换到AMD品牌`);
-        this.setData({ currentBrand: 'AMD' });
-        this.loadComponentsByType(currentComponent, 'AMD');
-        return;
-      }
-      
-      // 如果是CPU且当前品牌是AMD，尝试切换到英特尔
-      if (currentComponent === 'cpu' && currentBrand === 'AMD') {
-        console.log(`[筛选] 尝试切换到英特尔品牌`);
-        this.setData({ currentBrand: '英特尔' });
-        this.loadComponentsByType(currentComponent, '英特尔');
-        return;
-      }
-      
-      // 尝试其他可能的品牌
-      const availableBrands = this.data.brandOptions[currentComponent] || [];
-      
-      if (availableBrands.length > 0) {
-        // 找到当前品牌以外的其他品牌
-        const otherBrands = availableBrands.filter(brand => brand !== currentBrand);
-        
-        if (otherBrands.length > 0) {
-          const newBrand = otherBrands[0]; // 选择第一个其他品牌
-          console.log(`[筛选] 切换到${newBrand}品牌`);
-          
-          this.setData({ currentBrand: newBrand });
-          this.loadComponentsByType(currentComponent, newBrand);
-          return;
-        }
-      }
-      
-      // 实在没有其他选择，尝试获取所有品牌数据
-      console.log(`[筛选] 尝试获取所有品牌数据`);
-      this.setData({ currentBrand: 'all' });
-      this.loadComponentsByType(currentComponent, 'all');
-      return;
-    }
-    
-    // 更新筛选后的组件列表
-    this.setData({
-      filteredComponents: filtered,
-      filteredComponentsCount: filtered.length
-    });
-  },
-
-  /**
-   * 获取价格范围
-   */
-  getPriceRange: function(priceOption) {
-    switch (priceOption) {
-      case 'low':
-        return [0, 1000];
-      case 'mid':
-        return [1000, 2000];
-      case 'high':
-        return [2000, 4000];
-      case 'premium':
-        return [4000, 0]; // 0表示无上限
-      default:
-        return [0, 0]; // 全部价格范围
-    }
-  },
-
-  /**
-   * 切换组件类型
-   */
-  switchComponent: function(e) {
-    const componentType = e.currentTarget.dataset.component || e.currentTarget.dataset.type;
-    
-    if (!componentType) return;
-    
-    console.log('[组件切换] 切换到组件类型:', componentType);
-    
-    // 自动选择一个默认品牌
-    let defaultBrand = 'all';
-    
-    // 根据组件类型选择适当的默认品牌
-    if (componentType === 'cpu') {
-      // CPU默认显示英特尔产品
-      defaultBrand = '英特尔';
-    } else if (componentType === 'gpu') {
-      // GPU默认显示英伟达产品
-      defaultBrand = '英伟达';
-    } else if (this.data.brandOptions[componentType] && 
-              this.data.brandOptions[componentType].length > 0) {
-      // 对于其他组件类型，如果有品牌数据，选择第一个品牌
-      defaultBrand = this.data.brandOptions[componentType][0];
-    }
-    
-    console.log(`[组件切换] 选择默认品牌: ${defaultBrand} 用于 ${componentType}`);
-        
-        this.setData({
-      currentComponent: componentType,
-      currentBrand: defaultBrand,
-      currentPrice: 'all'
-    });
-    
-    // 检查该组件类型的数据是否已加载
-    if (!this.data.components[componentType] || 
-        !Array.isArray(this.data.components[componentType]) || 
-        this.data.components[componentType].length === 0) {
-      // 如果数据未加载，则加载该类型的数据，并指定默认品牌
-      console.log(`[组件切换] 组件${componentType}数据未加载，开始加载`);
-      this.loadComponentsByType(componentType, defaultBrand);
-    } else {
-      // 使用现有数据进行筛选
-      console.log(`[组件切换] 组件${componentType}已有数据，开始筛选`);
-      this.filterComponents();
-    }
-  },
-
-  /**
-   * 按品牌筛选组件
-   */
-  filterByBrand: function(e) {
-    const brand = e.currentTarget.dataset.brand;
-    const type = this.data.currentComponent;
-    
-    console.log(`筛选${type}组件，品牌: ${brand}`);
-    
-    // 如果选择了相同的品牌，不重复加载
-    if (this.data.currentBrand === brand) {
-      console.log('已经是当前选中的品牌，不重复加载');
-      return;
-    }
-    
-    // 显示加载提示
-    wx.showLoading({
-      title: '加载数据中...',
-      mask: true
-    });
-    
-    // 超时保护，10秒后如果还未加载完成，自动关闭加载提示
-    const loadingTimeout = setTimeout(() => {
-        wx.hideLoading();
-          wx.showToast({
-        title: '数据加载超时，请重试',
-          icon: 'none'
-        });
-    }, 10000);
-    
-    // 更新当前选中的品牌
-    this.setData({
-      currentBrand: brand
-    });
-    
-    // 从云端加载指定品牌的数据
-    this.loadComponentsByType(type, brand)
-      .then(data => {
-        // 清除超时保护
-        clearTimeout(loadingTimeout);
-        
-        // 隐藏加载提示
-        wx.hideLoading();
-        
-        // 显示加载结果
-        console.log(`成功加载 ${data.length} 个 ${brand} 品牌的 ${type} 数据`);
-        
-        if (data.length === 0) {
-          wx.showToast({
-            title: `未找到${brand}品牌的${type}数据`,
-            icon: 'none'
-          });
-        } else {
-          wx.showToast({
-            title: `已加载${data.length}条数据`,
-            icon: 'success'
-          });
-          
-          // 直接进行筛选，应用当前品牌和价格筛选
-          this.filterComponents();
-        }
-      })
-      .catch(err => {
-        // 清除超时保护
-        clearTimeout(loadingTimeout);
-        
-        // 隐藏加载提示
-        wx.hideLoading();
-        
-        console.error('品牌筛选数据加载失败:', err);
-        wx.showToast({
-          title: '加载失败，请重试',
-          icon: 'none'
-        });
-        
-        // 出错时恢复到"全部"品牌
-        this.setData({
-          currentBrand: 'all'
-        });
-    });
-  },
-
-  /**
-   * 按价格筛选组件
-   */
-  filterByPrice: function(e) {
-    const price = e.currentTarget.dataset.price;
       this.setData({
-      currentPrice: price
-    });
-        this.filterComponents();
-  },
-
-  /**
-   * 计算总价
-   */
-  calculateTotalPrice: function() {
-    const { selectedItems } = this.data;
-    let totalPrice = 0;
-    
-    if (selectedItems) {
-    Object.values(selectedItems).forEach(item => {
-        if (item && typeof item.price === 'number') {
-          totalPrice += item.price;
-      }
-    });
-    }
-    
-    this.setData({ totalPrice });
-    return totalPrice;
-  },
-
-  /**
-   * 选择组件
-   */
-  selectComponent: function(e) {
-    const id = e.currentTarget.dataset.id;
-    const { currentComponent, filteredComponents, selectedItems } = this.data;
-      
-      // 查找选中的组件
-    const selectedComponent = filteredComponents.find(item => item.id === id);
-    
-    if (selectedComponent) {
-      // 更新已选组件
-      const newSelectedItems = { ...selectedItems };
-      newSelectedItems[currentComponent] = selectedComponent;
-      
-    this.setData({
-        selectedItems: newSelectedItems
+        allFilteredComponents: finalFiltered,
+        filteredComponents: displayItems,
+        filteredComponentsCount: totalCount,
+        hasMoreComponents: totalCount > this.data.displayedCount
       });
       
-      console.log(`已选择${currentComponent}: ${selectedComponent.name}`);
-      
-      // 重新计算总价
-      this.calculateTotalPrice();
-      
-      // 如果启用了自动切换，切换到下一个组件
-      if (this.data.autoSwitchToNext) {
-        this.switchToNextComponent();
-      }
+      debugLog(`[筛选函数] 筛选完成，总共${totalCount}个组件，显示前${displayItems.length}个`);
     }
   },
   
   /**
-   * 切换到下一个组件
+   * 根据价格选项获取价格范围
+   * @param {string} componentType - 组件类型
+   * @param {string} priceOption - 价格选项: low, medium, high, premium
+   * @returns {Object} 价格范围 {min, max}
    */
-  switchToNextComponent: function() {
-    const componentOrder = ['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case', 'cooling', 'monitor'];
-    const currentIndex = componentOrder.indexOf(this.data.currentComponent);
+  getPriceRange: function(componentType, priceOption) {
+    // 定义各种组件的价格范围
+    const priceRanges = {
+      cpu: {
+        low: { min: 0, max: 1000 },
+        medium: { min: 1000, max: 2000 },
+        high: { min: 2000, max: 3500 },
+        premium: { min: 3500, max: 0 }  // max为0表示无上限
+      },
+      gpu: {
+        low: { min: 0, max: 2000 },
+        medium: { min: 2000, max: 4000 },
+        high: { min: 4000, max: 7000 },
+        premium: { min: 7000, max: 0 }
+      },
+      motherboard: {
+        low: { min: 0, max: 800 },
+        medium: { min: 800, max: 1500 },
+        high: { min: 1500, max: 2500 },
+        premium: { min: 2500, max: 0 }
+      },
+      ram: {
+        low: { min: 0, max: 300 },
+        medium: { min: 300, max: 600 },
+        high: { min: 600, max: 1000 },
+        premium: { min: 1000, max: 0 }
+      },
+      storage: {
+        low: { min: 0, max: 400 },
+        medium: { min: 400, max: 800 },
+        high: { min: 800, max: 1500 },
+        premium: { min: 1500, max: 0 }
+      },
+      psu: {
+        low: { min: 0, max: 500 },
+        medium: { min: 500, max: 1000 },
+        high: { min: 1000, max: 1500 },
+        premium: { min: 1500, max: 0 }
+      },
+      case: {
+        low: { min: 0, max: 300 },
+        medium: { min: 300, max: 700 },
+        high: { min: 700, max: 1500 },
+        premium: { min: 1500, max: 0 }
+      },
+      cooling: {
+        low: { min: 0, max: 200 },
+        medium: { min: 200, max: 500 },
+        high: { min: 500, max: 1000 },
+        premium: { min: 1000, max: 0 }
+      },
+      monitor: {
+        low: { min: 0, max: 1000 },
+        medium: { min: 1000, max: 2000 },
+        high: { min: 2000, max: 4000 },
+        premium: { min: 4000, max: 0 }
+      }
+    };
     
-    if (currentIndex >= 0 && currentIndex < componentOrder.length - 1) {
-      const nextComponent = componentOrder[currentIndex + 1];
-        this.setData({
-        currentComponent: nextComponent,
-          currentBrand: 'all',
-          currentPrice: 'all'
-        });
+    // 查找对应组件类型的价格范围
+    const typeRanges = priceRanges[componentType] || {
+      low: { min: 0, max: 500 },
+      medium: { min: 500, max: 1000 },
+      high: { min: 1000, max: 2000 },
+      premium: { min: 2000, max: 0 }
+    };
+    
+    // 返回对应价格选项的范围，如果没有找到则返回全范围
+    return typeRanges[priceOption] || { min: 0, max: 0 };
+  },
+  
+  /**
+   * 切换组件类型
+   */
+  switchComponent: function(e) {
+    const componentType = e.currentTarget.dataset.component || (e.currentTarget.dataset.type || 'cpu');
+    
+    // 如果已经是当前选择的组件类型，不需要切换
+    if (componentType === this.data.currentComponent) {
+      debugLog(`[switchComponent] 当前已经是${componentType}，无需切换`);
+      return;
+    }
+    
+    debugLog(`[switchComponent] 切换组件类型: ${componentType}`);
+    
+    // 更新组件类型
+    this.setData({
+      currentComponent: componentType,
+      previousComponent: this.data.currentComponent,
+      // 重置筛选相关状态
+      currentBrand: 'all',
+      currentPrice: 'all',
+      currentCoolingType: 'all',
+      searchKeyword: '',
+      // 更新搜索框占位符
+      searchPlaceholder: this.getSearchPlaceholder(componentType)
+    });
+    
+    // 加载对应类型的组件数据
+    this.loadComponentData(componentType);
+  },
+  
+  /**
+   * 获取搜索框占位符文本
+   */
+  getSearchPlaceholder: function(componentType) {
+    // 根据组件类型返回对应的搜索占位符
+    switch(componentType) {
+      case 'cpu': return '搜索CPU';
+      case 'motherboard': return '搜索主板';
+      case 'ram': return '搜索内存';
+      case 'gpu': return '搜索显卡';
+      case 'storage': return '搜索存储';
+      case 'psu': return '搜索电源';
+      case 'case': return '搜索机箱';
+      case 'cooling': return '搜索散热';
+      case 'caseFan': return '搜索机箱散热';
+      case 'monitor': return '搜索显示器';
+      default: return '搜索组件';
+    }
+  },
+  
+  /**
+   * 加载机箱风扇数据
+   */
+  loadCaseFanData: function() {
+    // 先检查是否已经加载了散热器数据
+    if (this.data.components.cooling && this.data.components.cooling.length > 0) {
+      // 从散热器数据中筛选出机箱风扇
+      const caseFans = this.data.components.cooling.filter(item => {
+        const itemType = item['散热形式'] || item['类型'] || item.type || '';
+        const itemName = item['名称'] || item.name || '';
+        
+        // 明确是机箱风扇的情况
+        if (itemType === '机箱风扇' || itemName.includes('机箱风扇')) {
+          return true;
+        }
+        
+        // 排除明确不是机箱风扇的情况
+        if (itemName.includes('水冷') || 
+            itemName.includes('CPU') || 
+            itemName.includes('散热器') || 
+            itemName.includes('一体式') || 
+            itemName.includes('AIO') ||
+            // 排除水冷相关词汇
+            itemName.includes('冰岩') || 
+            itemName.includes('水泵') ||
+            // 排除特定产品名
+            itemName.includes('利民') && itemName.includes('FW') ||
+            // 排除含"无风扇"但实际是水冷的产品
+            itemName.includes('无风扇') && 
+              (itemType === '水冷' || itemName.includes('雪冰岩'))) {
+          return false;
+        }
+        
+        // 其他含有"风扇"字样的产品视为机箱风扇
+        return itemName.includes('风扇');
+      });
+      
+      // 更新本地数据
+      this.setData({
+        'components.caseFan': caseFans
+      });
       
       // 应用筛选
-        this.filterComponents();
+      this.filterComponents();
+    } else {
+      // 如果散热器数据还没加载，先加载散热器数据
+      const collectionName = this.data.componentCollections.cooling;
+      this.getComponentData(collectionName, {}).then(res => {
+        if (res.success) {
+          // 提取全部的散热器数据
+          const allCoolers = res.data || [];
+          
+          // 筛选出机箱风扇
+          const caseFans = allCoolers.filter(item => {
+            const itemType = item['散热形式'] || item['类型'] || item.type || '';
+            const itemName = item['名称'] || item.name || '';
+            
+            // 明确是机箱风扇的情况
+            if (itemType === '机箱风扇' || itemName.includes('机箱风扇')) {
+              return true;
+            }
+            
+            // 排除明确不是机箱风扇的情况
+            if (itemName.includes('水冷') || 
+                itemName.includes('CPU') || 
+                itemName.includes('散热器') || 
+                itemName.includes('一体式') || 
+                itemName.includes('AIO') ||
+                // 排除水冷相关词汇
+                itemName.includes('冰岩') || 
+                itemName.includes('水泵') ||
+                // 排除特定产品名
+                itemName.includes('利民') && itemName.includes('FW') ||
+                // 排除含"无风扇"但实际是水冷的产品
+                itemName.includes('无风扇') && 
+                  (itemType === '水冷' || itemName.includes('雪冰岩'))) {
+              return false;
+            }
+            
+            // 其他含有"风扇"字样的产品视为机箱风扇
+            return itemName.includes('风扇');
+          });
+          
+          // 保存数据并应用筛选
+          this.setData({
+            'components.cooling': allCoolers,
+            'components.caseFan': caseFans
+          });
+          
+          // 应用筛选
+          this.filterComponents();
+        } else {
+          console.error('获取散热器数据失败:', res.error);
+          wx.showToast({
+            title: '加载数据失败',
+            icon: 'none'
+          });
+        }
+      }).catch(err => {
+        console.error('加载散热器数据出错:', err);
+      });
+    }
+  },
+
+  /**
+   * 按品牌筛选 - 简化版，直接请求云函数
+   * @param {Object} e - 事件对象
+   */
+  filterByBrand: function(e) {
+    const brand = e.currentTarget.dataset.brand;
+    
+    debugLog(`[数据追踪] 选择品牌: ${brand}`);
+    
+    // 如果已经选中了该品牌，不需要重新过滤
+    if (brand === this.data.currentBrand) {
+      debugLog(`[数据追踪] 已选择品牌 ${brand}, 不重复过滤`);
+      return;
+    }
+    
+    // 添加防抖处理，避免快速切换品牌导致卡死
+    if (this.brandFilterTimer) {
+      clearTimeout(this.brandFilterTimer);
+    }
+    
+    // 显示加载中
+    wx.showLoading({
+      title: '切换品牌...',
+      mask: true
+    });
+    
+    // 更新当前品牌
+    this.setData({
+      currentBrand: brand
+    });
+    
+    // 延迟执行筛选，给UI留出更新时间
+    this.brandFilterTimer = setTimeout(() => {
+      // 无论是否有已选组件，都应用当前筛选逻辑
+      // 如果有已选组件，filterComponents会自动调用applyCompatibilityFilter
+      this.filterComponents();
+      wx.hideLoading();
+    }, 50);
+  },
+
+  /**
+   * 根据价格筛选
+   */
+  filterByPrice: function(e) {
+    const price = e.currentTarget.dataset.price;
+    
+    // 如果已经选择了相同的价格，不需要重新筛选
+    if (price === this.data.currentPrice) {
+      return;
+    }
+    
+    debugLog(`[数据追踪] 选择价格: ${price}`);
+    
+    // 如果没有组件数据，不执行筛选
+    if (!this.data.components[this.data.currentComponent]) {
+      debugLog(`[数据追踪] 没有${this.data.currentComponent}组件数据，无法筛选`);
+      return;
+    }
+    
+    // 更新当前价格选择
+    this.setData({
+      currentPrice: price
+    });
+    
+    // 无论是否有已选组件，都应用当前筛选逻辑
+    // 如果有已选组件，filterComponents会自动调用applyCompatibilityFilter
+    this.filterComponents();
+  },
+
+  /**
+   * 按散热类型筛选 - 由UI触发
+   */
+  filterByCoolingType: function(e) {
+    const coolingType = e.currentTarget.dataset.type;
+    
+    // 添加详细日志
+    coolingLog(`开始 - 用户选择了散热类型: ${coolingType}, 当前类型: ${this.data.currentCoolingType}`);
+    
+    // 如果已经选择了相同的散热类型，不需要重新筛选
+    if (coolingType === this.data.currentCoolingType) {
+      coolingLog(`已经是当前选择的散热类型, 不执行筛选`);
+      return;
+    }
+    
+    debugLog(`[数据追踪] 选择散热类型: ${coolingType}`);
+    
+    // 如果没有散热组件数据，不执行筛选
+    if (!this.data.components['cooling']) {
+      coolingLog(`错误 - 没有散热组件数据，无法筛选`);
+      debugLog(`[数据追踪] 没有散热组件数据，无法筛选`);
+      return;
+    }
+    
+    // 输出当前散热组件数量
+    coolingLog(`当前散热组件总数: ${this.data.components['cooling'].length}`);
+    
+    // 更新当前散热类型选择
+    this.setData({
+      currentCoolingType: coolingType
+    });
+    
+    coolingLog(`已更新数据，即将执行组件筛选`);
+    
+    // 应用当前筛选逻辑
+    this.filterComponents();
+  },
+
+  /**
+   * 计算总价格
+   */
+  calculateTotalPrice: function() {
+    let total = 0;
+    
+    // 遍历所有已选组件
+    for (const type in this.data.selectedItems) {
+      if (this.data.selectedItems.hasOwnProperty(type)) {
+        // 所有组件都使用统一的处理方式
+        if (this.data.selectedItems[type] && (this.data.selectedItems[type].价格 || this.data.selectedItems[type].price)) {
+          const price = this.data.selectedItems[type].价格 || this.data.selectedItems[type].price || 0;
+          const quantity = this.data.selectedItems[type].quantity || 1;
+          total += price * quantity;
+        }
       }
+    }
+    
+    // 更新总价
+    this.setData({
+      totalPrice: Math.round(total)
+    });
+    
+    debugLog(`[价格] 更新总价: ${total}元`);
+    return total;
+  },
+  
+  /**
+   * 选择组件 - 添加到配置中
+   */
+  selectComponent: function(e) {
+    debugLog(`[组件选择] 开始处理选择组件`);
+    const item = e.currentTarget.dataset.item;
+    const componentType = e.currentTarget.dataset.type;
+    
+    debugLog(`[组件选择] 组件类型: ${componentType}, 组件ID: ${item.id}`);
+    
+    // 检查是否已经选择了该组件
+    const alreadySelected = this.data.selectedItems[componentType] && 
+                          this.data.selectedItems[componentType].id === item.id;
+    
+    // 是否支持多选（如内存条、显卡、存储设备等）
+    // 将caseFan添加到支持多选的组件中
+    let supportsMultipleSelection = ['ram', 'gpu', 'storage', 'monitor', 'caseFan'].includes(componentType);
+    
+    // 特殊处理散热器类型：如果是cooling类型，需要区分不同散热类型
+    if (componentType === 'cooling') {
+      // 获取散热类型，判断是否是机箱风扇
+      const coolingType = item.散热形式 || item.类型 || item.type || '';
+      const itemName = item.名称 || item.name || '';
+      const isCaseFan = coolingType === '机箱风扇' || itemName.includes('机箱风扇') || 
+                        (itemName.includes('风扇') && !itemName.includes('CPU') && 
+                         !itemName.includes('散热器') && !itemName.includes('水冷'));
+      
+      // 仅机箱风扇支持多选，其他散热类型不支持
+      supportsMultipleSelection = isCaseFan;
+      
+      debugLog(`[组件选择] 散热组件: ${itemName}, 类型: ${coolingType}, 是否为机箱风扇: ${isCaseFan}, 支持多选: ${supportsMultipleSelection}`);
+    }
+    
+    debugLog(`[组件选择] 是否已选择: ${alreadySelected}, 是否支持多选: ${supportsMultipleSelection}`);
+    
+    // 如果是已选择的组件且不支持多选，则取消选择
+    if (alreadySelected && !supportsMultipleSelection) {
+      debugLog(`[组件选择] 取消选择${componentType}组件`);
+      
+      // 创建一个新的selectedItems对象，删除对应类型
+      const newSelectedItems = {...this.data.selectedItems};
+      delete newSelectedItems[componentType];
+      
+      this.setData({
+        selectedItems: newSelectedItems
+      });
+      
+      // 重新计算总价
+      this.calculateTotalPrice();
+      
+      // 显示取消选择提示
+      wx.showToast({
+        title: '已取消选择',
+        icon: 'success',
+        duration: 1000
+      });
+      
+      // 应用筛选逻辑，根据是否还有已选组件自动选择合适的筛选方式
+      this.filterComponents();
+      
+      return;
+    }
+    
+    if (alreadySelected && supportsMultipleSelection) {
+      // 如果已经选择过，且支持多选，增加数量
+      debugLog(`[组件选择] 增加已选${componentType}组件数量`);
+      this.increaseQuantity(e);
+      return;
+    }
+    
+    // 特殊处理: 如果是cooling类型但不支持多选（非机箱风扇），需要替换原选择
+    if (componentType === 'cooling' && !supportsMultipleSelection && this.data.selectedItems[componentType]) {
+      debugLog(`[组件选择] 替换单选散热组件`);
+      
+      // 提示用户
+      wx.showToast({
+        title: '已替换散热器',
+        icon: 'success',
+        duration: 1000
+      });
+    }
+    
+    // 移除特殊处理机箱风扇的代码，将其作为普通多选组件处理
+    
+    // 更新普通组件，保留原始字段
+    item.quantity = 1; // 初始化数量为1
+    
+    this.setData({
+      [`selectedItems.${componentType}`]: item
+    });
+    
+    // 重新计算总价
+    this.calculateTotalPrice();
+    
+    // 显示选择成功提示
+    wx.showToast({
+      title: '已选择',
+      icon: 'success',
+      duration: 1000
+    });
+    
+    // 记录更新后的所有已选组件
+    debugLog('[组件选择] 当前已选所有组件:', JSON.stringify(this.data.selectedItems));
+    
+    // 应用筛选逻辑 - 有已选组件，会自动触发兼容性筛选
+    this.filterComponents();
+    
+    // 判断是否自动切换到下一个组件
+    // 复数组件（内存、显卡、存储等）不自动跳转
+    const multiSelectComponents = ['ram', 'gpu', 'storage', 'monitor', 'caseFan'];
+    if (this.data.autoSwitchToNext && !multiSelectComponents.includes(componentType)) {
+      // 获取下一个要选择的组件类型
+      const componentOrder = ['cpu', 'motherboard', 'cooling', 'ram', 'storage', 'gpu', 'psu', 'case', 'caseFan', 'monitor'];
+      const currentIndex = componentOrder.indexOf(componentType);
+      
+      // 如果当前不是最后一个组件，则切换到下一个
+      if (currentIndex < componentOrder.length - 1) {
+        const nextComponent = componentOrder[currentIndex + 1];
+        debugLog(`[组件选择] 自动切换到下一个组件: ${nextComponent}`);
+        this.switchToNextComponent();
+      } else {
+        debugLog('[组件选择] 已是最后一个组件，不自动切换');
+      }
+    }
+  },
+
+  /**
+   * 预览配置
+   * 显示当前配置的预览页面
+   */
+  previewConfig: function() {
+    debugLog('[数据追踪] 调用预览配置功能');
+    
+    // 检查是否有已选组件
+    const { selectedItems, totalPrice } = this.data;
+    const selectedKeys = Object.keys(selectedItems);
+    
+    if (selectedKeys.length === 0) {
+      // 没有选择任何组件，提示用户
+      wx.showToast({
+        title: '请先选择组件',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+    
+    // 生成最终配置对象
+    const finalConfig = this.generateFinalConfig();
+    debugLog('[数据追踪] 预览配置信息:', finalConfig);
+    
+    // 将配置数据存储到全局数据
+    getApp().globalData.tempConfig = finalConfig;
+    
+    // 跳转到预览页面
+    wx.navigateTo({
+      url: '/pages/configPreview/configPreview',
+      fail: (err) => {
+        console.error('[数据追踪] 跳转预览页面失败:', err);
+        
+        // 提示页面不存在
+        wx.showToast({
+          title: '预览功能正在开发中',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+    });
+  },
+  
+  /**
+   * 重置配置
+   * 清空所有已选组件
+   */
+  resetConfig: function() {
+    debugLog('[数据追踪] 重置配置');
+    
+    // 弹窗确认
+    wx.showModal({
+      title: '确认重置',
+      content: '确定要重置当前配置吗？这将清空所有已选组件。',
+      success: (res) => {
+        if (res.confirm) {
+          // 用户点击确定，重置配置
+          this.setData({
+            selectedItems: {},
+            totalPrice: 0,
+            configName: '我的配置'
+          });
+          
+          // 重置当前组件类型为第一个
+          this.switchComponent({
+            currentTarget: {
+              dataset: {
+                component: 'cpu'
+              }
+            }
+          });
+          
+          // 重置品牌和价格筛选
+          this.setData({
+            currentBrand: 'all',
+            currentPrice: 'all',
+            currentCoolingType: 'all' // 重置散热类型筛选
+          });
+          
+          // 重新加载当前组件数据，已经没有已选组件，会显示所有组件
+          this.loadComponentsByType('cpu');
+          
+          wx.showToast({
+            title: '配置已重置',
+            icon: 'success',
+            duration: 1500
+          });
+        }
+      }
+    });
+  },
+
+  /**
+   * 增加组件数量
+   */
+  increaseQuantity: function(e) {
+    // 获取传递的数据
+    const item = e.currentTarget.dataset.item;
+    const componentType = this.data.currentComponent;
+    
+    debugLog(`[数量增加] 开始处理, 组件:`, item);
+    debugLog(`[数量增加] 组件ID: ${item.id}, 当前类型: ${componentType}`);
+    
+    // 获取当前已选择的组件
+    const selectedItem = this.data.selectedItems[componentType];
+    
+    // 如果未找到已选组件，或者组件ID不匹配，则退出
+    if (!selectedItem || selectedItem.id !== item.id) {
+      debugLog(`[数量增加] 未找到匹配的已选组件`);
+      return;
+    }
+    
+    // 特殊处理散热器组件 - 如果不是机箱风扇，不允许增加
+    if (componentType === 'cooling') {
+      // 判断是否是机箱风扇
+      const coolingType = selectedItem.散热形式 || selectedItem.类型 || selectedItem.type || '';
+      const itemName = selectedItem.名称 || selectedItem.name || '';
+      const isCaseFan = coolingType === '机箱风扇' || itemName.includes('机箱风扇') || 
+                       (itemName.includes('风扇') && !itemName.includes('CPU') && 
+                        !itemName.includes('散热器') && !itemName.includes('水冷'));
+      
+      // 如果不是机箱风扇，显示提示并返回
+      if (!isCaseFan) {
+        debugLog(`[数量增加] 风冷/水冷散热器不支持多选`);
+        wx.showToast({
+          title: '散热器不可多选',
+          icon: 'none',
+          duration: 1500
+        });
+        return;
+      }
+    }
+    
+    // 增加数量（默认从1开始）
+    const quantity = (selectedItem.quantity || 1) + 1;
+    
+    // 设置数量上限，防止过度选择
+    const maxQuantity = 16; // 默认最大数量16个
+    
+    if (quantity > maxQuantity) {
+      debugLog(`[数量增加] 已达到最大数量 ${maxQuantity}`);
+      wx.showToast({
+        title: `最多选择${maxQuantity}个`,
+        icon: 'none',
+        duration: 1500
+      });
+      return;
+    }
+    
+    debugLog(`[数量增加] 更新数量: ${quantity}`);
+    
+    // 更新组件数量
+    this.setData({
+      [`selectedItems.${componentType}.quantity`]: quantity
+    });
+    
+    // 重新计算总价
+    this.calculateTotalPrice();
+    
+    // 显示成功提示
+    wx.showToast({
+      title: `已选择${quantity}个`,
+      icon: 'success',
+      duration: 1000
+    });
+  },
+  
+  /**
+   * 减少组件数量
+   */
+  decreaseQuantity: function(e) {
+    // 获取传递的数据
+    const item = e.currentTarget.dataset.item;
+    const componentType = this.data.currentComponent;
+    
+    debugLog(`[数量减少] 开始处理, 组件:`, item);
+    
+    // 获取当前已选择的组件
+    const selectedItem = this.data.selectedItems[componentType];
+    
+    // 如果未找到已选组件，或者组件ID不匹配，则退出
+    if (!selectedItem || selectedItem.id !== item.id) {
+      debugLog(`[数量减少] 未找到匹配的已选组件`);
+      return;
+    }
+    
+    // 获取当前数量
+    const currentQuantity = selectedItem.quantity || 1;
+    
+    // 如果当前数量为1，则取消选择
+    if (currentQuantity <= 1) {
+      // 创建一个新的selectedItems对象，删除对应类型
+      const newSelectedItems = {...this.data.selectedItems};
+      delete newSelectedItems[componentType];
+      
+      this.setData({
+        selectedItems: newSelectedItems
+      });
+      
+      debugLog(`[数量减少] 数量为1，取消选择`);
+      
+      // 重新计算总价
+      this.calculateTotalPrice();
+      
+      // 显示取消选择提示
+      wx.showToast({
+        title: '已取消选择',
+        icon: 'success',
+        duration: 1000
+      });
+      
+      return;
+    }
+    
+    // 减少数量
+    const quantity = currentQuantity - 1;
+    
+    debugLog(`[数量减少] 更新数量: ${quantity}`);
+    
+    // 更新组件数量
+    this.setData({
+      [`selectedItems.${componentType}.quantity`]: quantity
+    });
+    
+    // 重新计算总价
+    this.calculateTotalPrice();
+    
+    // 显示成功提示
+    wx.showToast({
+      title: `已选择${quantity}个`,
+      icon: 'success',
+      duration: 1000
+    });
+  },
+
+  /**
+   * 自动切换到下一个组件
+   */
+  switchToNextComponent: function() {
+    const componentTypes = ['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case', 'cooling', 'caseFan', 'monitor'];
+    const currentIndex = componentTypes.indexOf(this.data.currentComponent);
+    
+    if (currentIndex >= 0 && currentIndex < componentTypes.length - 1) {
+      // 切换到下一个组件
+      const nextComponent = componentTypes[currentIndex + 1];
+      
+      // 使用switchComponent函数切换
+      this.switchComponent({
+        currentTarget: {
+          dataset: {
+            component: nextComponent
+          }
+        }
+      });
+    }
   },
 
   /**
@@ -1648,9 +2497,9 @@ Page({
   setConfigName: function(e) {
       this.setData({
       configName: e.detail.value
-    });
+      });
   },
-
+  
   /**
    * 生成最终配置
    */
@@ -1663,7 +2512,8 @@ Page({
       components: selectedItems,
       totalPrice: totalPrice,
       createTime: new Date().toISOString(),
-      userId: wx.cloud.inited ? wx.cloud.getOpenId() : null
+      // 移除这个字段，让云函数自动设置正确的OPENID
+      // userId: wx.cloud.inited ? wx.cloud.getOpenId() : null
     };
     
     this.setData({ finalConfig });
@@ -1675,40 +2525,58 @@ Page({
    * 保存配置
    */
   saveConfig: function() {
-    // 生成最终配置
-    const config = this.generateFinalConfig();
-    
-    console.log('保存配置:', config);
-    
-    // 显示加载提示
-    wx.showLoading({
-      title: '保存中',
-      mask: true
+    // 检查是否有选择组件
+    const selectedItems = this.data.selectedItems;
+    const hasSelectedComponents = Object.keys(selectedItems).some(key => {
+      // 简化判断，所有组件统一用id判断
+      return selectedItems[key] && (selectedItems[key].id || selectedItems[key]._id);
     });
     
-    // 调用云函数保存配置
-    wx.cloud.callFunction({
-      name: 'saveConfig',
-      data: {
-        config: config
-      },
-      success: res => {
-        wx.hideLoading();
-          wx.showToast({
-          title: '配置已保存',
-            icon: 'success'
-          });
+    if (!hasSelectedComponents) {
+      wx.showToast({
+        title: '请先选择组件',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 创建配置对象
+    const config = {
+      id: 'config_' + Date.now(),
+      name: this.data.configName || '我的配置',
+      components: this.data.selectedItems,
+      totalPrice: this.data.totalPrice,
+      createTime: new Date(),
+      updateTime: new Date()
+    };
+    
+    // 保存配置
+    const app = getApp();
+    app.saveUserConfig(config).then(success => {
+      if (success) {
+        wx.showToast({
+          title: '保存成功',
+          icon: 'success'
+        });
         
-        // 可以在这里添加跳转到配置列表页面的逻辑
-      },
-      fail: err => {
-        console.error('保存配置失败:', err);
-        wx.hideLoading();
+        // 可以跳转到配置列表页
+        setTimeout(() => {
+          wx.navigateTo({
+            url: '/pages/configList/configList'
+          });
+        }, 1500);
+      } else {
         wx.showToast({
           title: '保存失败',
           icon: 'none'
         });
       }
+    }).catch(err => {
+      console.error('保存配置失败:', err);
+      wx.showToast({
+        title: '保存失败',
+        icon: 'none'
+      });
     });
   },
 
@@ -1762,18 +2630,18 @@ Page({
     const brandOptions = {};
     
     // 调试日志，输出组件对象的键
-    console.log("组件对象键名:", Object.keys(components));
+    debugLog("组件对象键名:", Object.keys(components));
     
     // 遍历每种组件类型
     Object.keys(components).forEach(type => {
       // 安全检查，确保组件数据存在且是数组
       if (!components[type] || !Array.isArray(components[type])) {
-        console.warn(`组件类型 ${type} 的数据不存在或不是数组，跳过处理`);
+        debugLog(`组件类型 ${type} 的数据不存在或不是数组，跳过处理`);
         brandOptions[type] = []; // 创建空数组避免后续引用错误
         return; // 跳过此类型处理
       }
       
-      console.log(`处理 ${type} 组件品牌，数据量: ${components[type].length}`);
+      debugLog(`处理 ${type} 组件品牌，数据量: ${components[type].length}`);
       
       try {
         // 获取当前组件类型的品牌处理模块
@@ -1834,7 +2702,7 @@ Page({
             
             if (fallbackBrand && fallbackBrand.trim() !== '') {
               brandMap[fallbackBrand] = (brandMap[fallbackBrand] || 0) + 1;
-              console.log(`使用备选品牌: ${fallbackBrand} 用于 ${type}`);
+              debugLog(`使用备选品牌: ${fallbackBrand} 用于 ${type}`);
             }
           }
         });
@@ -1846,23 +2714,23 @@ Page({
         uniqueBrands.sort();
         
         // 输出品牌统计信息
-        console.log(`${type}品牌统计:`, brandMap);
+        debugLog(`${type}品牌统计:`, brandMap);
         
         // 设置该组件类型的品牌选项
         brandOptions[type] = uniqueBrands;
         
-        console.log(`${type}组件品牌列表 (共${uniqueBrands.length}个):`, uniqueBrands);
+        debugLog(`${type}组件品牌列表 (共${uniqueBrands.length}个):`, uniqueBrands);
         
         // 特别处理CPU类型，确保至少有英特尔和AMD两个选项
         if (type === 'cpu' && uniqueBrands.length < 2) {
-          console.warn('CPU品牌列表不完整，添加默认品牌');
+          debugLog('CPU品牌列表不完整，添加默认品牌');
           const defaultCpuBrands = ['英特尔', 'AMD'];
           defaultCpuBrands.forEach(brand => {
             if (!brandOptions[type].includes(brand)) {
               brandOptions[type].push(brand);
             }
           });
-          console.log(`添加默认品牌后的CPU品牌列表:`, brandOptions[type]);
+          debugLog(`添加默认品牌后的CPU品牌列表:`, brandOptions[type]);
         }
         
         // 如果是CPU，确保品牌列表包含英特尔和AMD（使用中文名称）
@@ -1887,7 +2755,7 @@ Page({
         // 特别处理CPU类型，即使出错也确保有基本品牌
         if (type === 'cpu') {
           brandOptions[type] = ['英特尔', 'AMD'];
-          console.log('CPU品牌处理出错，使用默认品牌列表');
+          debugLog('CPU品牌处理出错，使用默认品牌列表');
         }
       }
     });
@@ -1997,10 +2865,10 @@ Page({
 
   // 修改debugCpuData函数，使用新的匹配方法
   debugCpuData: function() {
-    console.log('===== CPU数据调试信息 =====');
+    debugLog('===== CPU数据调试信息 =====');
     
     const allCpus = this.data.components?.cpu || [];
-    console.log(`总共加载了 ${allCpus.length} 个CPU`);
+    debugLog(`总共加载了 ${allCpus.length} 个CPU`);
     
     if (allCpus.length === 0) {
       console.error('没有加载到任何CPU数据，请检查数据库连接和查询');
@@ -2008,7 +2876,7 @@ Page({
     }
     
     // 展示前5条原始数据以便调试
-    console.log('前5条CPU原始数据:', allCpus.slice(0, 5).map(cpu => ({
+    debugLog('前5条CPU原始数据:', allCpus.slice(0, 5).map(cpu => ({
       id: cpu.id,
       name: cpu.name,
       brand: cpu.brand,
@@ -2036,20 +2904,20 @@ Page({
       }
     });
     
-    console.log('品牌分布:', brandCount);
-    console.log(`检测到的AMD CPU数量: ${amdCpus.length}`);
-    console.log(`检测到的Intel CPU数量: ${intelCpus.length}`);
-    console.log(`未识别品牌CPU数量: ${otherCpus.length}`);
+    debugLog('品牌分布:', brandCount);
+    debugLog(`检测到的AMD CPU数量: ${amdCpus.length}`);
+    debugLog(`检测到的Intel CPU数量: ${intelCpus.length}`);
+    debugLog(`未识别品牌CPU数量: ${otherCpus.length}`);
     
     // 样本展示
     if (amdCpus.length > 0) {
-      console.log('AMD CPU样本:', amdCpus.slice(0, 3).map(cpu => ({
+      debugLog('AMD CPU样本:', amdCpus.slice(0, 3).map(cpu => ({
         id: cpu.id,
         name: cpu.name,
         brand: cpu.brand
       })));
     } else {
-      console.warn('未检测到AMD CPU! 请检查数据库或品牌字段设置');
+      debugLog('未检测到AMD CPU! 请检查数据库或品牌字段设置');
       
       // 检查是否有名称中含AMD却没有正确品牌的CPU
       const potentialAmd = allCpus.filter(cpu => 
@@ -2059,12 +2927,12 @@ Page({
       );
       
       if (potentialAmd.length > 0) {
-        console.warn('发现可能的AMD CPU，但品牌字段不是AMD:', potentialAmd.slice(0, 3));
+        debugLog('发现可能的AMD CPU，但品牌字段不是AMD:', potentialAmd.slice(0, 3));
       }
     }
     
     if (intelCpus.length > 0) {
-      console.log('Intel CPU样本:', intelCpus.slice(0, 3).map(cpu => ({
+      debugLog('Intel CPU样本:', intelCpus.slice(0, 3).map(cpu => ({
         id: cpu.id,
         name: cpu.name,
         brand: cpu.brand
@@ -2072,7 +2940,7 @@ Page({
     }
     
     if (otherCpus.length > 0) {
-      console.log('其他CPU样本:', otherCpus.slice(0, 3).map(cpu => ({
+      debugLog('其他CPU样本:', otherCpus.slice(0, 3).map(cpu => ({
         id: cpu.id,
         name: cpu.name,
         brand: cpu.brand
@@ -2080,19 +2948,19 @@ Page({
     }
     
     // 测试品牌选项生成
-    console.log('===== 品牌选项测试 =====');
-    console.log('CPU品牌选项:', this.data.brandOptions?.cpu || []);
+    debugLog('===== 品牌选项测试 =====');
+    debugLog('CPU品牌选项:', this.data.brandOptions?.cpu || []);
     
     // 测试筛选
     if (amdCpus.length > 0) {
-      console.log('AMD筛选应该可以正常工作');
-    } else {
-      console.warn('警告: 没有AMD数据，筛选可能会显示空结果');
+      debugLog('AMD筛选应该可以正常工作');
+      } else {
+      debugLog('警告: 没有AMD数据，筛选可能会显示空结果');
     }
     
-    console.log('===== CPU调试结束 =====');
+    debugLog('===== CPU调试结束 =====');
   },
-
+  
   /**
    * 切换品牌列表折叠状态
    */
@@ -2107,9 +2975,53 @@ Page({
    * 切换显示所有品牌
    */
   toggleShowAllBrands: function() {
-      this.setData({
+    this.setData({
       showAllBrands: !this.data.showAllBrands
       });
+  },
+
+  /**
+   * 切换显示更多规格信息
+   */
+  toggleSpecDetail: function(e) {
+    const id = e.currentTarget.dataset.id;
+    debugLog(`[数据追踪] 切换参数显示: ${id}`);
+    
+    // 查找对应的组件索引
+    const index = this.data.filteredComponents.findIndex(item => item.id === id);
+    if (index < 0) {
+      console.error(`[数据追踪] 未找到ID为${id}的组件`);
+      return;
+    }
+    
+    // 切换显示状态
+    const newState = !this.data.filteredComponents[index].showMoreSpecs;
+    
+    // 更新组件数据
+    this.setData({
+      [`filteredComponents[${index}].showMoreSpecs`]: newState
+    });
+  },
+  
+  /**
+   * 切换兼容性过滤开关
+   */
+  toggleCompatibilityFilter: function(e) {
+    const isChecked = e.detail.value;
+    debugLog(`[兼容性过滤] 切换状态: ${isChecked}`);
+    
+    // 确保UI状态更新
+        this.setData({
+      onlyShowCompatible: isChecked
+    });
+    
+    // 根据开关状态应用不同的过滤方式
+    if (isChecked) {
+      this.applyCompatibilityFilter();
+    } else {
+      // 如果关闭了兼容性过滤，恢复原始过滤方式
+          this.filterComponents();
+        }
   },
 
   /**
@@ -2120,59 +3032,1627 @@ Page({
   sortGpuSpecs: function(specs) {
     if (!specs || !Array.isArray(specs)) return specs;
     
-    // 重要规格的权重映射
+    // 核心参数优先级映射（更全面的关键词列表）
     const priorityMap = {
+      // 核心参数 (90-100)
       '显存': 100,
       '显存大小': 100,
+      '显存容量': 100,
       'VRAM': 100,
-      '显存类型': 90,
-      '核心频率': 80,
-      '频率': 80,
-      '显存频率': 75,
-      '功耗': 70,
-      'TDP': 70,
-      '接口': 60,
-      'PCIe': 60,
-      '散热': 50,
-      '长度': 40
+      '内存': 100,
+      'Memory': 100,
+      'Memory Size': 100,
+      
+      '显存类型': 95,
+      '显存颗粒': 95,
+      'GDDR': 95,
+      'HBM': 95,
+      'Memory Type': 95,
+      
+      '核心频率': 90,
+      '基础频率': 90,
+      '频率': 90,
+      'Clock': 90,
+      'Core Clock': 90,
+      
+      // 重要技术参数 (70-89)
+      '显存频率': 85,
+      'Memory Clock': 85,
+      '加速频率': 84,
+      '超频频率': 84,
+      '最大频率': 84,
+      'Boost Clock': 84,
+      
+      '功耗': 80,
+      '额定功率': 80,
+      '温度': 80,
+      'TDP': 80,
+      'Power': 80,
+      'Wattage': 80,
+      '能耗': 80,
+      
+      '位宽': 78,
+      '总线宽度': 78,
+      'Bus Width': 78,
+      'Memory Bus': 78,
+      '内存位宽': 78,
+      
+      '流处理器': 75, 
+      '流处理单元': 75,
+      'CUDA核心': 75,
+      'CUDA': 75,
+      'CUDA Cores': 75,
+      'Stream Processors': 75,
+      
+      // 物理和连接参数 (50-69)
+      '接口': 65,
+      '总线': 65,
+      '插槽': 65,
+      'Interface': 65,
+      'PCIe': 65,
+      'PCI Express': 65,
+      
+      '供电接口': 60,
+      '电源接口': 60,
+      '供电需求': 60,
+      'Power Connector': 60,
+      '供电': 60,
+      
+      '散热': 55,
+      '散热方式': 55,
+      '风扇': 55,
+      'Cooling': 55,
+      'Fan': 55,
+      
+      '长度': 50,
+      '厚度': 50,
+      '高度': 50,
+      '尺寸': 50,
+      'Length': 50,
+      'Size': 50,
+      'Dimensions': 50,
+      
+      // 其他参数 (10-49)
+      '光追核心': 45,
+      'RT Cores': 45,
+      '光线追踪': 45,
+      
+      'AI核心': 44,
+      'Tensor核心': 44,
+      'AI计算': 44,
+      
+      '工艺': 40,
+      '制程': 40,
+      'Process': 40,
+      'Technology': 40,
+      
+      '显示输出': 35,
+      '接口数量': 35,
+      'Outputs': 35,
+      'Display Ports': 35,
+      'HDMI': 35,
+      
+      '发布日期': 30,
+      '上市时间': 30,
+      'Release Date': 30,
+      
+      '架构': 25,
+      '显卡架构': 25,
+      'Architecture': 25
+    };
+    
+    // 获取优先级的函数，支持多种匹配方式
+    const getPriority = (label) => {
+      // 标准化标签：转小写并去除空格
+      const normalizedLabel = label.toLowerCase().trim();
+      
+      // 1. 精确匹配
+      if (priorityMap[label] !== undefined) {
+        return priorityMap[label];
+      }
+      
+      // 2. 忽略大小写的精确匹配
+      for (const [key, value] of Object.entries(priorityMap)) {
+        if (key.toLowerCase() === normalizedLabel) {
+          return value;
+        }
+      }
+      
+      // 3. 关键词包含匹配
+      for (const [key, value] of Object.entries(priorityMap)) {
+        // 标签包含关键词
+        if (normalizedLabel.includes(key.toLowerCase())) {
+          return value - 3; // 稍微降低优先级
+        }
+        
+        // 关键词包含标签
+        if (key.toLowerCase().includes(normalizedLabel)) {
+          return value - 5; // 更低的优先级
+        }
+      }
+      
+      // 4. 某些特定类别的智能识别
+      if (/显存|内存|memory|vram|gddr|ddr|g\d+d|hbm|gb\b/i.test(normalizedLabel)) {
+        return 85; // 显存相关
+      }
+      
+      if (/频率|clock|hz|mhz|ghz|性能|速度/i.test(normalizedLabel)) {
+        return 80; // 频率相关
+      }
+      
+      if (/功率|功耗|耗电量|power|watt|tdp|能耗|发热/i.test(normalizedLabel)) {
+        return 75; // 功耗相关
+      }
+      
+      if (/接口|interface|pcie|pci-e|pci|slot|插槽|总线/i.test(normalizedLabel)) {
+        return 60; // 接口相关
+      }
+      
+      if (/尺寸|大小|长度|宽度|厚度|height|width|length|size/i.test(normalizedLabel)) {
+        return 45; // 尺寸相关
+      }
+      
+      if (/电源|供电|pin|针|power supply|power connector/i.test(normalizedLabel)) {
+        return 55; // 供电相关
+      }
+      
+      // 未匹配到任何关键词，较低优先级
+      return 0;
     };
     
     // 排序规格
-    return specs.sort((a, b) => {
+    return [...specs].sort((a, b) => {
       const labelA = a.label || '';
       const labelB = b.label || '';
-      
-      // 获取优先级，如果不在映射表中，返回-1
-      const getPriority = (label) => {
-        // 精确匹配
-        if (priorityMap[label] !== undefined) {
-          return priorityMap[label];
-        }
-        
-        // 模糊匹配 (如果标签包含关键词)
-        for (const [key, value] of Object.entries(priorityMap)) {
-          if (label.indexOf(key) >= 0) {
-            return value - 5; // 略微降低优先级
-          }
-        }
-        
-        return -1;
-      };
       
       const priorityA = getPriority(labelA);
       const priorityB = getPriority(labelB);
       
-      // 如果两者都有优先级，按优先级排序
-      if (priorityA >= 0 && priorityB >= 0) {
+      // 主排序：优先级
+      if (priorityA !== priorityB) {
         return priorityB - priorityA;
       }
       
-      // 如果只有一个有优先级，有优先级的排前面
-      if (priorityA >= 0) return -1;
-      if (priorityB >= 0) return 1;
-      
-      // 如果都没优先级，按原顺序
-      return 0;
+      // 次排序：标签长度（相同优先级下，短标签优先）
+      return labelA.length - labelB.length;
+      });
+  },
+  
+  /**
+   * 将前端组件类型映射为云函数期望的类型
+   * 确保前端与云函数在组件类型命名上保持一致
+   */
+  mapComponentType: function(type) {
+    // 组件类型名称映射表
+    const typeMapping = {
+      'ram': 'memory',   // 内存在云函数中使用'memory'
+      'case': 'case',    // 保持一致的映射
+      'psu': 'power',    // 电源可能在云函数中为'power'
+      'cooling': 'cooler', // 散热器可能在云函数中为'cooler'
+      'storage': 'disk'   // 存储在云函数中可能为'disk'
+    };
+    
+    // 如果有对应的映射，返回映射值，否则返回原值
+    return typeMapping[type] || type;
+  },
+  
+  /**
+   * 调试兼容性过滤状态
+   */
+  debugCompatibilityFilter: function() {
+    debugLog('====== 兼容性过滤调试信息 ======');
+    debugLog(`当前组件类型: ${this.data.currentComponent}`);
+    debugLog(`兼容性过滤状态: ${this.data.onlyShowCompatible ? '已开启' : '已关闭'}`);
+    debugLog(`当前品牌: ${this.data.currentBrand}`);
+    debugLog(`当前价格: ${this.data.currentPrice}`);
+    debugLog(`已选组件数量: ${Object.keys(this.data.selectedItems).length}`);
+    
+    if (this.data.selectedItems && Object.keys(this.data.selectedItems).length > 0) {
+      debugLog('已选组件列表:');
+      Object.keys(this.data.selectedItems).forEach(type => {
+        const item = this.data.selectedItems[type];
+        if (item) {
+          debugLog(`- ${type}: ${item.name} (ID: ${item.id})`);
+        }
+      });
+    } else {
+      debugLog('没有选择任何组件');
+    }
+    
+    debugLog(`当前显示组件数量: ${this.data.filteredComponentsCount}`);
+    debugLog('===============================');
+    
+    // 返回状态供调用者使用
+    return {
+      componentType: this.data.currentComponent,
+      isCompatibilityFilterOn: this.data.onlyShowCompatible,
+      brand: this.data.currentBrand,
+      price: this.data.currentPrice,
+      selectedItemsCount: Object.keys(this.data.selectedItems).length,
+      filteredComponentsCount: this.data.filteredComponentsCount
+    };
+  },
+
+  /**
+   * 提取组件品牌列表
+   * @param {string} componentType - 组件类型
+   * @param {Array} componentsData - 组件数据
+   */
+  extractBrands: function(componentType, componentsData) {
+    debugLog(`[数据追踪] 提取${componentType}品牌列表`);
+    
+    if (!componentsData || componentsData.length === 0) {
+      debugLog(`[数据追踪] 组件数据为空，无法提取品牌`);
+      this.setData({
+        [`brandOptions.${componentType}`]: []
+      });
+      return;
+    }
+    
+    // 提取所有可能的品牌
+    const brands = componentsData
+      .map(item => item.brand || '')
+      .filter(brand => brand && brand.trim() !== '')  // 过滤掉空品牌
+      .map(brand => brand.trim());                    // 清理空格
+    
+    // 统计每个品牌的出现次数
+    const brandCount = {};
+    brands.forEach(brand => {
+      const lowerBrand = brand.toLowerCase();
+      brandCount[lowerBrand] = (brandCount[lowerBrand] || 0) + 1;
+    });
+    
+    // 获取唯一品牌列表，并按出现频率排序
+    const uniqueBrands = [...new Set(brands)]
+      .sort((a, b) => {
+        const countA = brandCount[a.toLowerCase()] || 0;
+        const countB = brandCount[b.toLowerCase()] || 0;
+        return countB - countA;  // 降序排列
+      });
+    
+    debugLog(`[数据追踪] 发现${uniqueBrands.length}个品牌`);
+    
+    // 更新品牌选项
+    this.setData({
+      [`brandOptions.${componentType}`]: uniqueBrands
     });
   },
+
+  /**
+   * 应用兼容性过滤
+   */
+  applyCompatibilityFilter: function() {
+    // 如果没有选择任何组件，即使开启了兼容性过滤，也返回所有组件
+    if (!this.data.selectedItems || Object.keys(this.data.selectedItems).length === 0) {
+      debugLog('[兼容性过滤] 没有选择任何组件，显示所有组件');
+      this.filterComponents(true); // 使用普通过滤，传入true跳过兼容性检查
+      return;
+    }
+    
+    // 显示加载提示
+    wx.showLoading({
+      title: '筛选兼容组件...',
+      mask: true
+    });
+    
+    // 设置超时保护，防止长时间卡死
+    const timeoutId = setTimeout(() => {
+      debugLog('[兼容性过滤:前端] 筛选超时，显示所有结果');
+      wx.hideLoading();
+      wx.showToast({
+        title: '筛选超时，显示所有结果',
+        icon: 'none',
+        duration: 2000
+      });
+      // 取消兼容性过滤，显示所有组件，传入true避免循环调用
+      this.filterComponents(true);
+    }, 3000); // 3秒超时
+    
+    debugLog('[兼容性过滤:前端] 开始前端兼容性筛选');
+    
+    try {
+      // 获取当前组件类型
+      const componentType = this.data.currentComponent;
+      
+      // 获取当前组件类型的所有组件（考虑已经应用的品牌和价格筛选）
+      let components = this.data.components[componentType] || [];
+      
+      // 首先应用品牌和价格筛选（保持这部分逻辑不变）
+      if (this.data.currentBrand !== 'all') {
+        components = this.filterComponentsByBrand(components, this.data.currentBrand);
+      }
+      
+      if (this.data.currentPrice !== 'all') {
+        components = this.filterComponentsByPrice(components, this.data.currentPrice);
+      }
+      
+      // 应用散热类型筛选
+      if (this.data.currentComponent === 'cooling' && this.data.currentCoolingType !== 'all') {
+        components = this.filterComponentsByCoolingType(components, this.data.currentCoolingType);
+      }
+      
+      debugLog(`[兼容性过滤:前端] 应用品牌、价格和类型筛选后，剩余${components.length}个组件`);
+      
+      // 改用异步处理以防止UI卡死
+      // 将筛选操作放到下一个事件循环中
+      setTimeout(() => {
+        try {
+          // 清除超时计时器
+          clearTimeout(timeoutId);
+          
+          // 使用已选组件进行兼容性筛选
+          const selectedItems = this.data.selectedItems;
+          
+          // 性能优化：将处理的组件数量上限改为非常大的值
+          const MAX_COMPONENTS_TO_PROCESS = 10000;
+          if (components.length > MAX_COMPONENTS_TO_PROCESS) {
+            debugLog(`[兼容性过滤:前端] 组件数量(${components.length})超过限制，只处理前${MAX_COMPONENTS_TO_PROCESS}个`);
+            components = components.slice(0, MAX_COMPONENTS_TO_PROCESS);
+          }
+          
+          // 简化的兼容性检查，直接比较关键字段
+          const compatibleComponents = components.filter(component => {
+            // CPU与主板兼容性检查
+            if (componentType === 'motherboard' && selectedItems.cpu) {
+              // 同时检查socket和接口字段，确保不会漏掉有效值
+              const cpuSocket = selectedItems.cpu.接口 || selectedItems.cpu.socket || '';
+              const mbSocket = component.接口 || component.socket || '';
+              
+              // 规范化接口字符串（去除空格，转换为大写），确保格式一致
+              const normCpuSocket = cpuSocket.replace(/\s+/g, '').toUpperCase();
+              const normMbSocket = mbSocket.replace(/\s+/g, '').toUpperCase();
+              
+              debugLog(`[CPU-主板兼容性检查] CPU: ${selectedItems.cpu.名称 || selectedItems.cpu.name}, 接口: ${cpuSocket} [标准化:${normCpuSocket}], 主板: ${component.名称 || component.name}, 接口: ${mbSocket} [标准化:${normMbSocket}]`);
+              
+              if (normCpuSocket && normMbSocket && normCpuSocket !== normMbSocket) {
+                debugLog(`[CPU-主板兼容性检查] 不兼容: ${normCpuSocket} !== ${normMbSocket}`);
+                return false;
+              } else if (!normCpuSocket || !normMbSocket) {
+                debugLog(`[CPU-主板兼容性检查] 缺少必要信息，跳过兼容性检查: cpuSocket=${normCpuSocket}, mbSocket=${normMbSocket}`);
+              } else {
+                debugLog(`[CPU-主板兼容性检查] 兼容: ${normCpuSocket} === ${normMbSocket}`);
+              }
+            }
+            
+            // 反向检查：主板与CPU兼容性
+            if (componentType === 'cpu' && selectedItems.motherboard) {
+              // 同时检查socket和接口字段，确保不会漏掉有效值
+              const cpuSocket = component.接口 || component.socket || '';
+              const mbSocket = selectedItems.motherboard.接口 || selectedItems.motherboard.socket || '';
+              
+              // 规范化接口字符串（去除空格，转换为大写），确保格式一致
+              const normCpuSocket = cpuSocket.replace(/\s+/g, '').toUpperCase();
+              const normMbSocket = mbSocket.replace(/\s+/g, '').toUpperCase();
+              
+              debugLog(`[主板-CPU兼容性检查] CPU: ${component.名称 || component.name}, 接口: ${cpuSocket} [标准化:${normCpuSocket}], 主板: ${selectedItems.motherboard.名称 || selectedItems.motherboard.name}, 接口: ${mbSocket} [标准化:${normMbSocket}]`);
+              
+              if (normCpuSocket && normMbSocket && normCpuSocket !== normMbSocket) {
+                debugLog(`[主板-CPU兼容性检查] 不兼容: ${normCpuSocket} !== ${normMbSocket}`);
+                return false;
+              } else if (!normCpuSocket || !normMbSocket) {
+                debugLog(`[主板-CPU兼容性检查] 缺少必要信息，跳过兼容性检查: cpuSocket=${normCpuSocket}, mbSocket=${normMbSocket}`);
+              } else {
+                debugLog(`[主板-CPU兼容性检查] 兼容: ${normCpuSocket} === ${normMbSocket}`);
+              }
+            }
+            
+            // 内存与主板兼容性检查
+            if ((componentType === 'ram' || componentType === 'memory') && selectedItems.motherboard) {
+              // 直接获取内存接口类型
+              const ramType = component.接口类型 || '';
+              
+              // 从主板的内存插槽字段中提取内存类型部分
+              let mbMemoryType = '';
+              if (selectedItems.motherboard.内存插槽) {
+                // 使用更灵活的正则表达式匹配各种格式："4*D5", "4×D5", "4 x D5"等
+                const memSlotMatch = selectedItems.motherboard.内存插槽.match(/\d+\s*[\*×xX]\s*([DdRr]\d+)/);
+                if (memSlotMatch) {
+                  mbMemoryType = memSlotMatch[1].toUpperCase();
+                }
+              }
+              
+              // 输出详细调试信息
+              debugLog(`[内存兼容性检查-详细] 内存数据:`, {
+                名称: component.名称 || component.name,
+                接口类型: ramType,
+                完整对象: JSON.stringify(component).substring(0, 100) + '...'
+              });
+              
+              debugLog(`[内存兼容性检查-详细] 主板数据:`, {
+                名称: selectedItems.motherboard.名称 || selectedItems.motherboard.name,
+                内存插槽: selectedItems.motherboard.内存插槽,
+                提取类型: mbMemoryType,
+                完整对象: JSON.stringify(selectedItems.motherboard).substring(0, 100) + '...'
+              });
+              
+              // 如果没有提取到主板内存类型，尝试其他可能的字段
+              if (!mbMemoryType) {
+                debugLog(`[内存兼容性检查-警告] 无法从内存插槽"${selectedItems.motherboard.内存插槽}"提取内存类型，尝试其他可能的字段`);
+                
+                // 直接尝试memoryType字段（如果存在）
+                if (selectedItems.motherboard.memoryType) {
+                  mbMemoryType = selectedItems.motherboard.memoryType.toUpperCase();
+                  debugLog(`[内存兼容性检查] 使用memoryType字段: ${mbMemoryType}`);
+                }
+              }
+              
+              debugLog(`[内存兼容性检查] 最终比较: 内存接口类型(${ramType}) vs 主板内存类型(${mbMemoryType})`);
+              
+              // 只有当两者都有值且不相等时，才判定为不兼容
+              if (ramType && mbMemoryType && ramType !== mbMemoryType) {
+                debugLog(`[内存兼容性检查] 不兼容: ${ramType} !== ${mbMemoryType}`);
+                return false;
+              } else if (!ramType || !mbMemoryType) {
+                debugLog(`[内存兼容性检查-警告] 缺少必要信息，跳过兼容性检查: ramType=${ramType}, mbMemoryType=${mbMemoryType}`);
+              } else {
+                debugLog(`[内存兼容性检查] 兼容: ${ramType} === ${mbMemoryType}`);
+              }
+            }
+            
+            // 所有兼容性检查通过
+            return true;
+          });
+          
+          debugLog(`[兼容性过滤:前端] 兼容性筛选后，剩余${compatibleComponents.length}个组件`);
+          
+          // 确保已选择的当前类型组件（如果有）排在列表最前面
+          const currentType = this.data.currentComponent;
+          const selectedItem = this.data.selectedItems[currentType];
+          
+          if (selectedItem) {
+            debugLog(`[兼容性过滤:前端] 发现已选择的${currentType}组件，将其排在列表最前面`);
+            
+            // 从兼容性筛选结果中移除已选择的组件（如果存在于筛选结果中）
+            const selectedItemIndex = compatibleComponents.findIndex(item => item.id === selectedItem.id);
+            if (selectedItemIndex >= 0) {
+              const selectedItemInList = compatibleComponents.splice(selectedItemIndex, 1)[0];
+              
+              // 将已选择的组件添加到列表最前面
+              compatibleComponents.unshift(selectedItemInList);
+              
+              debugLog(`[兼容性过滤:前端] 已将选择的组件移到列表第一位`);
+            } else {
+              debugLog(`[兼容性过滤:前端] 已选择的组件不在兼容性筛选结果中`);
+            }
+          }
+          
+          // 更新显示的组件列表 - 同时更新allFilteredComponents
+          this.setData({
+            filteredComponents: compatibleComponents,
+            allFilteredComponents: compatibleComponents, // 添加这行，确保价格排序使用相同的数据
+            filteredComponentsCount: compatibleComponents.length,
+            hasMoreComponents: compatibleComponents.length > this.data.displayedCount
+          });
+          
+          wx.hideLoading();
+          
+          // 显示过滤结果
+          if (compatibleComponents.length === 0) {
+            wx.showToast({
+              title: '没有找到兼容组件',
+              icon: 'none',
+              duration: 2000
+            });
+          } else {
+            wx.showToast({
+              title: `找到${compatibleComponents.length}个兼容组件`,
+              icon: 'success',
+              duration: 1500
+            });
+          }
+        } catch (err) {
+          clearTimeout(timeoutId);
+          wx.hideLoading();
+          console.error('[兼容性过滤:前端] 前端兼容性筛选出错:', err);
+          console.error('[兼容性过滤:前端] 错误堆栈:', err.stack);
+          
+          wx.showToast({
+            title: '兼容性筛选出错',
+            icon: 'none',
+            duration: 2000
+          });
+          
+          // 出错时回退到普通筛选，传入true避免循环调用
+          this.filterComponents(true);
+        }
+      }, 0); // 放到下一个事件循环中执行
+    } catch (err) {
+      clearTimeout(timeoutId);
+      wx.hideLoading();
+      console.error('[兼容性过滤:前端] 前端兼容性筛选出错:', err);
+      console.error('[兼容性过滤:前端] 错误堆栈:', err.stack);
+      
+      wx.showToast({
+        title: '兼容性筛选出错',
+        icon: 'none',
+        duration: 2000
+      });
+      
+      // 出错时回退到普通筛选，传入true避免循环调用
+      this.filterComponents(true);
+    }
+  },
+
+  /**
+   * 按品牌筛选组件（辅助函数）
+   */
+  filterComponentsByBrand: function(components, brand) {
+    if (brand === 'all' || brand === '全部') return components;
+    
+    debugLog(`[品牌筛选] 开始筛选，目标品牌: ${brand}, 组件数量: ${components.length}`);
+    
+    // 使用简单直接的品牌匹配
+    const result = components.filter(item => {
+      // 从多个可能的字段中获取品牌
+      const itemBrand = item.品牌 || item.brand || '';
+      
+      // 简单的精确匹配，不做复杂转换
+      const match = itemBrand === brand;
+      
+      if (match && this.data.currentComponent === 'cpu') {
+        debugLog(`[品牌筛选] 匹配到CPU: ${item.名称 || item.name}, 品牌: ${itemBrand}`);
+      }
+      
+      return match;
+    });
+    
+    debugLog(`[品牌筛选] 结果数量: ${result.length}`);
+    return result;
+  },
+  
+  /**
+   * 按价格筛选组件（辅助函数）
+   */
+  filterComponentsByPrice: function(components, priceRange) {
+    if (priceRange === 'all') return components;
+    
+    // 根据组件类型确定价格范围
+    const priceRanges = {
+      'cpu': { low: [0, 1500], medium: [1500, 3000], high: [3000, Infinity] },
+      'motherboard': { low: [0, 1000], medium: [1000, 2000], high: [2000, Infinity] },
+      'ram': { low: [0, 500], medium: [500, 1000], high: [1000, Infinity] },
+      'gpu': { low: [0, 2000], medium: [2000, 4000], high: [4000, Infinity] },
+      'storage': { low: [0, 500], medium: [500, 1000], high: [1000, Infinity] },
+      'psu': { low: [0, 500], medium: [500, 1000], high: [1000, Infinity] },
+      'case': { low: [0, 300], medium: [300, 800], high: [800, Infinity] },
+      'cooling': { low: [0, 200], medium: [200, 500], high: [500, Infinity] },
+      'monitor': { low: [0, 1000], medium: [1000, 2500], high: [2500, Infinity] }
+    };
+    
+    const componentType = this.data.currentComponent;
+    const ranges = priceRanges[componentType] || { low: [0, 1000], medium: [1000, 2000], high: [2000, Infinity] };
+    const range = ranges[priceRange];
+    
+    if (!range) return components;
+    
+    return components.filter(item => {
+      const price = parseFloat(item.price || item['价格'] || 0);
+      return price >= range[0] && price < range[1];
+    });
+  },
+
+  /**
+   * 按价格排序组件（辅助函数）
+   * @param {Array} components 要排序的组件数组
+   * @param {String} order 排序顺序：'asc'升序(从低到高)，'desc'降序(从高到低)
+   * @param {String} selectedId 已选中组件的ID（可选，如果提供则将其置顶）
+   * @returns {Array} 排序后的组件数组
+   */
+  sortComponentsByPrice: function(components, order = 'asc', selectedId = null) {
+    debugLog(`[价格排序] 开始排序，组件数量: ${components.length}, 顺序: ${order}, 选中ID: ${selectedId || '无'}`);
+    
+    if (!components || components.length === 0) return [];
+    
+    // 如果有选中的组件，先将其分离出来
+    let selectedComponent = null;
+    let otherComponents = components;
+    
+    if (selectedId) {
+      const selectedIndex = components.findIndex(item => item.id === selectedId);
+      if (selectedIndex >= 0) {
+        selectedComponent = components[selectedIndex];
+        otherComponents = components.filter(item => item.id !== selectedId);
+        debugLog(`[价格排序] 已分离选中组件: ${selectedComponent.名称 || selectedComponent.name}`);
+      }
+    }
+    
+    // 对其他组件按价格排序
+    const sortedComponents = [...otherComponents].sort((a, b) => {
+      // 获取价格，优先使用中文字段名
+      const priceA = parseFloat(a.价格 || a.price || 0);
+      const priceB = parseFloat(b.价格 || b.price || 0);
+      
+      // 根据排序顺序返回比较结果
+      return order === 'asc' ? priceA - priceB : priceB - priceA;
+    });
+    
+    debugLog(`[价格排序] 排序完成`);
+    
+    // 如果有选中组件，将其放在最前面
+    if (selectedComponent) {
+      return [selectedComponent, ...sortedComponents];
+    }
+    
+    return sortedComponents;
+  },
+
+  /**
+   * 应用价格排序
+   * @param {Object} e 事件对象
+   */
+  applyPriceSort: function(e) {
+    const order = e.currentTarget.dataset.order || 'asc';
+    
+    debugLog(`[价格排序] 应用价格排序，顺序: ${order}`);
+    
+    // 记录当前的排序顺序
+    this.setData({
+      currentPriceSort: order
+    });
+    
+    // 获取当前筛选后的组件列表
+    const components = this.data.allFilteredComponents || [];
+    
+    // 获取已选组件ID（如果有）
+    const selectedItem = this.data.selectedItems[this.data.currentComponent];
+    const selectedId = selectedItem ? selectedItem.id : null;
+    
+    // 进行排序
+    const sortedComponents = this.sortComponentsByPrice(components, order, selectedId);
+    
+    // 保存完整的排序结果
+    const totalCount = sortedComponents.length;
+    
+    // 只显示前N条
+    const displayItems = sortedComponents.slice(0, this.data.displayedCount);
+    
+    // 更新UI
+    this.setData({
+      allFilteredComponents: sortedComponents,
+      filteredComponents: displayItems,
+      filteredComponentsCount: totalCount,
+      hasMoreComponents: totalCount > this.data.displayedCount
+    });
+    
+    wx.showToast({
+      title: order === 'asc' ? '已按价格从低到高排序' : '已按价格从高到低排序',
+      icon: 'none',
+      duration: 1500
+    });
+  },
+
+  /**
+   * 取消选择组件
+   * @param {Object} e 事件对象
+   */
+  cancelSelection: function(e) {
+    const componentType = e.currentTarget.dataset.type;
+    const itemId = e.currentTarget.dataset.id;
+    
+    debugLog(`[组件选择] 取消选择${componentType}组件，ID: ${itemId}`);
+    
+    // 检查是否已经选择了该组件
+    const selectedItem = this.data.selectedItems[componentType];
+    if (!selectedItem || selectedItem.id !== itemId) {
+      debugLog('[组件选择] 未找到要取消的组件，可能已被取消');
+      return;
+    }
+    
+    // 创建一个新的selectedItems对象，删除对应类型
+    const newSelectedItems = {...this.data.selectedItems};
+    delete newSelectedItems[componentType];
+    
+    this.setData({
+      selectedItems: newSelectedItems
+    });
+    
+    // 重新计算总价
+    this.calculateTotalPrice();
+    
+    // 显示取消选择提示
+    wx.showToast({
+      title: '已取消选择',
+      icon: 'success',
+      duration: 1000
+    });
+    
+    // 应用筛选逻辑，根据是否还有已选组件自动选择合适的筛选方式
+    this.filterComponents();
+  },
+
+  // 分享配置按钮点击事件
+  shareConfig: function() {
+    // 跳转到配置预览页面
+    const tempConfig = {
+      components: this.data.selectedItems,
+      totalPrice: this.data.totalPrice,
+      name: this.data.configName || '我的电脑配置'
+    };
+    
+    // 保存到全局变量
+    app.globalData.tempConfig = tempConfig;
+    
+    // 跳转到预览页面
+    wx.navigateTo({
+      url: '/pages/configPreview/configPreview',
+      fail: (err) => {
+        console.error('[数据追踪] 跳转预览页面失败:', err);
+        
+        // 提示页面不存在
+        wx.showToast({
+          title: '预览功能正在开发中',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+    });
+  },
+  
+  // 保存配置到云数据库 - 仅限内部调用
+  saveToCloud: function(callback) {
+    wx.showLoading({
+      title: '准备分享...',
+    });
+    
+    // 字段映射处理 - 确保本地与云端使用相同的字段名
+    const fieldMapping = {
+      // 本地字段名: 云端字段名
+      'ram': 'memory',
+      'psu': 'powerSupply',
+      'storage': 'ssd', // 默认存储视为SSD
+    };
+    
+    // 准备要保存的配置数据
+    const selectedItems = this.data.selectedItems;
+    const configComponents = {};
+    
+    // 处理每个选中的组件，转换字段名并处理数量和价格
+    Object.keys(selectedItems).forEach(componentType => {
+      const component = selectedItems[componentType];
+      if (!component) return;
+      
+      // 跳过空组件
+      if (!component.id && !component._id) return;
+      
+      // 获取云端对应的字段名
+      const cloudFieldName = fieldMapping[componentType] || componentType;
+      
+      // 复制组件数据
+      const componentData = {...component};
+      
+      // 确保价格字段存在
+      if (!componentData.price && componentData['价格']) {
+        componentData.price = componentData['价格'];
+      }
+      
+      // 处理组件数量和价格
+      if (componentData.quantity && componentData.quantity > 1) {
+        // 如果有数量字段，记录单价和总价
+        componentData.unitPrice = componentData.price;
+        componentData.totalPrice = parseFloat(componentData.price) * componentData.quantity;
+      }
+      
+      // 保存到正确的字段
+      configComponents[cloudFieldName] = componentData;
+    });
+    
+    // 特殊处理存储设备 - 如果storage是HDD类型，则将其保存为hdd而非ssd
+    if (selectedItems.storage && selectedItems.storage.type === 'hdd') {
+      configComponents.hdd = configComponents.ssd;
+      delete configComponents.ssd;
+    }
+    
+    // 确保caseFan正确保存 - 特别关注机箱散热组件
+    if (selectedItems.caseFan) {
+      console.log('保存机箱散热组件:', selectedItems.caseFan);
+      configComponents.caseFan = selectedItems.caseFan;
+    }
+    
+    console.log('准备保存的组件:', configComponents);
+    
+    // 要保存的完整配置
+    const configToSave = {
+      // 统一格式：将组件放在components对象下
+      components: configComponents,
+      // 添加配置信息
+      title: this.data.configName || '我的电脑配置',
+      totalPrice: this.data.totalPrice,
+      createdAt: new Date(),
+      updateTime: new Date()
+    };
+    
+    console.log('最终保存的配置数据:', configToSave);
+    
+    // 调用云函数保存配置
+    wx.cloud.callFunction({
+      name: 'saveConfig',
+      data: {
+        config: configToSave
+      },
+      success: res => {
+        wx.hideLoading();
+        console.log('保存配置结果:', res);
+        if (res.result && res.result.success) {
+          this.setData({
+            configId: res.result.configId
+          });
+          
+          if (callback) callback();
+        } else {
+          wx.showToast({
+            title: '保存配置失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: err => {
+        console.error('保存配置失败:', err);
+        wx.hideLoading();
+        wx.showToast({
+          title: '保存失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+  
+  // 关闭分享弹窗
+  closeShareModal: function() {
+    this.setData({
+      showShareModal: false
+    });
+  },
+  
+  // 分享给微信好友 - 改为跳转到配置预览页面
+  shareToFriend: function() {
+    this.shareConfig();
+  },
+  
+  // 生成分享图片 - 改为跳转到配置预览页面
+  generateShareImage: function() {
+    this.shareConfig();
+  },
+  
+  // 微信小程序分享接口
+  onShareAppMessage: function() {
+    // 保存当前配置到全局变量
+    const tempConfig = {
+      components: this.data.selectedItems,
+      totalPrice: this.data.totalPrice,
+      name: this.data.configName || '我的电脑配置'
+    };
+    
+    // 保存到全局变量
+    app.globalData.tempConfig = tempConfig;
+    
+    return {
+      title: `我的电脑配置方案：¥${this.data.totalPrice}`,
+      path: '/pages/configPreview/configPreview',
+      imageUrl: '/images/share-bg.jpg'
+    }
+  },
+
+  /**
+   * 根据散热类型筛选组件
+   */
+  filterComponentsByCoolingType: function(components, coolingType) {
+    if (coolingType === 'all') {
+      coolingLog(`选择全部类型，不进行筛选，返回所有 ${components.length} 个组件`);
+      return components;
+    }
+    
+    coolingLog(`开始筛选，目标类型: ${coolingType}, 组件数量: ${components.length}`);
+    
+    // 记录组件的类型分布情况
+    const typeCounts = { '风冷': 0, '水冷': 0, '其他': 0 };
+    
+    // 使用直接的类型匹配，不做复杂转换
+    const result = components.filter(item => {
+      // 从多个可能的字段中获取散热类型 - 添加对"散热形式"字段的支持
+      const itemType = item.散热形式 || item.类型 || item.type || '';
+      const itemName = item.名称 || item.name || '';
+      
+      coolingLog(`检查组件: ${itemName}, 散热形式: ${itemType}`);
+      
+      // 记录组件类型分布
+      if (itemType === '风冷' || itemName.includes('风冷') || (itemName.includes('散热器') && !itemName.includes('水冷') && !itemName.includes('风扇'))) {
+        typeCounts['风冷']++;
+      } else if (itemType === '水冷' || itemName.includes('水冷') || itemName.includes('一体式') || itemName.includes('AIO')) {
+        typeCounts['水冷']++;
+      } else {
+        typeCounts['其他']++;
+      }
+      
+      // 风冷筛选
+      if (coolingType === '风冷') {
+        const matched = itemType === '风冷' || 
+               itemName.includes('风冷') || 
+               (itemName.includes('散热器') && !itemName.includes('水冷') && !itemName.includes('风扇'));
+        
+        if (matched) {
+          coolingLog(`匹配风冷: ${itemName}, 类型: ${itemType}`);
+        }
+        return matched;
+      } 
+      // 水冷筛选
+      else if (coolingType === '水冷') {
+        const matched = itemType === '水冷' || 
+               itemName.includes('水冷') || 
+               itemName.includes('一体式') || 
+               itemName.includes('AIO');
+        
+        if (matched) {
+          coolingLog(`匹配水冷: ${itemName}, 类型: ${itemType}`);
+        }
+        return matched;
+      }
+      
+      return false;
+    });
+    
+    coolingLog(`组件类型分布: `, typeCounts);
+    coolingLog(`筛选结果数量: ${result.length}/${components.length}`);
+    
+    debugLog(`[散热类型筛选] 结果数量: ${result.length}`);
+    return result;
+  },
+
+  /**
+   * 处理搜索输入
+   */
+  handleSearch: function(e) {
+    // 更新搜索关键词
+    const searchKeyword = e.detail.value;
+    this.setData({ 
+      searchKeyword: searchKeyword 
+    });
+    
+    // 使用防抖，避免频繁搜索
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+    }
+    
+    this.searchTimer = setTimeout(() => {
+      debugLog(`[搜索函数] 执行搜索, 关键词: ${searchKeyword}`);
+      
+      // 已经有对应的筛选功能，直接调用即可
+      this.filterComponents();
+    }, 300); // 300ms防抖
+  },
+
+  /**
+   * 清除搜索内容
+   */
+  clearSearch: function() {
+    this.setData({
+      searchKeyword: ''
+    });
+    
+    // 更新搜索结果（恢复原始筛选结果）
+    this.filterComponents();
+  },
+
+  /**
+   * 按关键词筛选组件（辅助函数）
+   */
+  filterComponentsByKeyword: function(components, keyword) {
+    if (!keyword || keyword.trim() === '') return components;
+    
+    // 统一转小写并去除首尾空格，方便不区分大小写匹配
+    const trimmedKeyword = keyword.trim().toLowerCase();
+    debugLog(`[关键词筛选] 开始筛选，关键词: ${trimmedKeyword}, 组件数量: ${components.length}`);
+    
+    // 将关键词分割成多个部分，支持空格分隔的多关键词搜索
+    const keywordParts = trimmedKeyword.split(/\s+/).filter(part => part.length > 0);
+    
+    // 如果没有有效关键词，返回原组件列表
+    if (keywordParts.length === 0) return components;
+    
+    // 根据组件类型调整匹配逻辑
+    const componentType = this.data.currentComponent;
+    
+    const result = components.filter(item => {
+      // 所有关键词部分都必须匹配才返回true（AND逻辑）
+      return keywordParts.every(keywordPart => {
+        // 尝试从多个字段中匹配关键词
+        
+        // 1. 名称匹配
+        const itemName = (item['名称'] || item.name || '').toLowerCase();
+        if (itemName.includes(keywordPart)) return true;
+        
+        // 2. 品牌匹配
+        const itemBrand = (item['品牌'] || item.brand || '').toLowerCase();
+        if (itemBrand.includes(keywordPart)) return true;
+        
+        // 3. 型号匹配
+        const itemModel = (item['型号'] || item.model || '').toLowerCase();
+        if (itemModel.includes(keywordPart)) return true;
+        
+        // 4. 接口匹配（主要针对CPU、主板）
+        const itemSocket = (item['接口'] || item.socket || '').toLowerCase();
+        if (itemSocket.includes(keywordPart)) return true;
+        
+        // 5. 在规格列表中搜索
+        if (item.specs && Array.isArray(item.specs)) {
+          // 遍历所有规格项
+          for (let i = 0; i < item.specs.length; i++) {
+            const spec = item.specs[i];
+            // 规格标签匹配
+            if (spec.label && spec.label.toLowerCase().includes(keywordPart)) return true;
+            // 规格值匹配
+            if (spec.value && spec.value.toString().toLowerCase().includes(keywordPart)) return true;
+          }
+        }
+        
+        // 6. 组件特有字段匹配
+        if (componentType === 'cpu') {
+          // CPU特有字段
+          const coreParts = [
+            item['核心数'] || item.core_count || '',
+            item['线程数'] || item.thread_count || '',
+            item['频率'] || item.frequency || item.base_frequency || '',
+            item['睿频'] || item.boost_frequency || '',
+            item['缓存'] || item.cache || '',
+            item['架构'] || item.architecture || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (coreParts.some(part => part.includes(keywordPart))) return true;
+        }
+        else if (componentType === 'motherboard') {
+          // 主板特有字段
+          const mbParts = [
+            item['芯片组'] || item.chipset || '',
+            item['板型'] || item.form_factor || item['尺寸(CM)'] || '',
+            item['内存插槽'] || item.memory_slots || '',
+            item['PCIe插槽'] || item['PCIe'] || item.pcie_slots || '',
+            item['SATA接口'] || item['SATA'] || item.sata_ports || '',
+            item['M.2接口'] || item['M2接口'] || item.m2_slots || '',
+            item['USB接口'] || item.usb_ports || '',
+            item['RGB'] || item.rgb_support || '',
+            item['WiFi'] || item.wifi_support || '',
+            item['蓝牙'] || item.bluetooth_support || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (mbParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理主板相关的关键词搜索
+          // 检查关键词是否是常见主板芯片组名称
+          const chipsetKeywords = ['z790', 'z690', 'z590', 'b760', 'b660', 'b550', 'x570'];
+          if (chipsetKeywords.includes(keywordPart)) {
+            // 查找芯片组名称中是否包含这个关键词
+            const chipset = (item['芯片组'] || item.chipset || '').toLowerCase();
+            if (chipset.includes(keywordPart)) return true;
+          }
+          
+          // 检查关键词是否是内存类型相关
+          const memoryKeywords = ['ddr4', 'ddr5', 'ddr3', 'd4', 'd5'];
+          if (memoryKeywords.includes(keywordPart)) {
+            // 查找内存插槽中是否包含这个关键词
+            const memorySlots = (item['内存插槽'] || item.memory_slots || '').toLowerCase();
+            if (memorySlots.includes(keywordPart)) return true;
+          }
+          
+          // 检查关键词是否是板型相关
+          const formFactorKeywords = ['atx', 'matx', 'm-atx', 'itx', 'mini-itx', 'eatx', 'e-atx'];
+          if (formFactorKeywords.some(ff => keywordPart.includes(ff))) {
+            // 查找板型中是否包含这个关键词
+            const formFactor = (item['板型'] || item.form_factor || item['尺寸(CM)'] || '').toLowerCase();
+            if (formFactor.includes(keywordPart)) return true;
+          }
+        }
+        else if (componentType === 'ram' || componentType === 'memory') {
+          // 内存特有字段
+          const ramParts = [
+            item['容量'] || item.capacity || '',
+            item['接口类型'] || item.type || '',
+            item['主频'] || item.frequency || '',
+            item['时序'] || item.timing || '',
+            item['电压'] || item.voltage || '',
+            item['RGB'] || item.rgb || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (ramParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理内存容量搜索（如"16g"、"32gb"）
+          if (/^\d+g(b)?$/.test(keywordPart)) {
+            const capacitySearch = keywordPart.replace(/gb$/i, 'g').toLowerCase();
+            const capacity = (item['容量'] || item.capacity || '').toLowerCase();
+            if (capacity === capacitySearch || capacity.replace(/\s+/g, '') === capacitySearch) return true;
+          }
+          
+          // 特别处理内存类型搜索（如"ddr4"、"ddr5"）
+          const memoryTypes = ['ddr3', 'ddr4', 'ddr5', 'd3', 'd4', 'd5'];
+          if (memoryTypes.includes(keywordPart)) {
+            const interfaceType = (item['接口类型'] || item.type || '').toLowerCase();
+            if (interfaceType.includes(keywordPart)) return true;
+          }
+        }
+        else if (componentType === 'gpu') {
+          // 显卡特有字段
+          const gpuParts = [
+            item['显存容量'] || item.memory || '',
+            item['显存类型'] || item.memory_type || '',
+            item['Boost频率'] || item.boost_clock || item.core_clock || '',
+            item['接口'] || item.interface || '',
+            item['功耗'] || item.tdp || item.power_consumption || '',
+            item['系列'] || item.series || '',
+            item['位宽'] || item.bus_width || '',
+            item['长度'] || item.length || '',
+            item['散热类型'] || item.cooling_type || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (gpuParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理显卡系列搜索
+          const gpuSeries = ['rtx', 'gtx', 'rx', 'arc'];
+          if (gpuSeries.some(series => keywordPart.includes(series))) {
+            const series = (item['系列'] || item.series || '').toLowerCase();
+            if (series.includes(keywordPart)) return true;
+            
+            // 也在名称中搜索系列信息，因为有些显卡系列信息包含在名称中
+            if (itemName.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理显存容量搜索（如"8g"、"16gb"）
+          if (/^\d+g(b)?$/.test(keywordPart)) {
+            const memorySearch = keywordPart.replace(/gb$/i, 'g').toLowerCase();
+            const memory = (item['显存容量'] || item.memory || '').toLowerCase();
+            if (memory.includes(memorySearch)) return true;
+          }
+        }
+        else if (componentType === 'storage') {
+          // 存储设备特有字段
+          const storageParts = [
+            item['容量'] || item.capacity || '',
+            item['接口'] || item.interface || '',
+            item['类型'] || item.type || '',
+            item['速率(读/写)MB/S'] || item.speed || '',
+            item['缓存'] || item.cache || '',
+            item['系列'] || item.series || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (storageParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理存储容量搜索
+          if (/^\d+(g|t)(b)?$/.test(keywordPart)) {
+            const capacitySearch = keywordPart.replace(/[gt]b$/i, match => match.charAt(0).toLowerCase()).toLowerCase();
+            const capacity = (item['容量'] || item.capacity || '').toLowerCase();
+            if (capacity.includes(capacitySearch)) return true;
+          }
+          
+          // 特别处理存储接口类型搜索
+          const interfaceTypes = ['sata', 'nvme', 'm.2', 'pcie', 'usb'];
+          if (interfaceTypes.some(type => keywordPart.includes(type))) {
+            const interfaceType = (item['接口'] || item.interface || '').toLowerCase();
+            if (interfaceType.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理SSD/HDD类型搜索
+          if (keywordPart === 'ssd' || keywordPart === 'hdd') {
+            const type = (item['类型'] || item.type || '').toLowerCase();
+            if (type.includes(keywordPart)) return true;
+            // 也在名称中检查，因为有些存储设备在名称中标明类型
+            if (itemName.includes(keywordPart)) return true;
+          }
+        }
+        else if (componentType === 'psu') {
+          // 电源特有字段
+          const psuParts = [
+            item['功率'] || item.wattage || item.power || '',
+            item['80PLUS认证'] || item.certification || '',
+            item['模组化'] || item.modularity || '',
+            item['风扇尺寸'] || item.fan_size || '',
+            item['保修'] || item.warranty || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (psuParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理电源功率搜索
+          if (/^\d+w$/.test(keywordPart)) {
+            const wattage = (item['功率'] || item.wattage || item.power || '').toLowerCase();
+            if (wattage.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理电源认证搜索
+          const certifications = ['白牌', '铜牌', '银牌', '金牌', '白金', '钛金', '80plus', 'bronze', 'silver', 'gold', 'platinum', 'titanium'];
+          if (certifications.some(cert => keywordPart.includes(cert))) {
+            const certification = (item['80PLUS认证'] || item.certification || '').toLowerCase();
+            if (certification.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理模组化搜索
+          if (keywordPart.includes('全模组') || keywordPart.includes('semi') || keywordPart.includes('非模组')) {
+            const modularity = (item['模组化'] || item.modularity || '').toLowerCase();
+            if (modularity.includes(keywordPart)) return true;
+          }
+        }
+        else if (componentType === 'case') {
+          // 机箱特有字段
+          const caseParts = [
+            item['板型'] || item.form_factor || '',
+            item['尺寸'] || item.dimensions || '',
+            item['风扇位'] || item.fan_slots || '',
+            item['RGB'] || item.rgb || '',
+            item['侧透'] || item.side_panel || '',
+            item['前置IO'] || item.front_io || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (caseParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理机箱大小/板型搜索
+          const formFactors = ['atx', 'matx', 'mitx', 'itx', 'eatx'];
+          if (formFactors.some(ff => keywordPart.includes(ff))) {
+            const formFactor = (item['板型'] || item.form_factor || '').toLowerCase();
+            if (formFactor.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理侧透搜索
+          if (keywordPart.includes('侧透') || keywordPart.includes('玻璃') || keywordPart.includes('glass')) {
+            const sidePanel = (item['侧透'] || item.side_panel || '').toLowerCase();
+            if (sidePanel.includes('透') || sidePanel.includes('玻璃') || sidePanel.includes('glass')) return true;
+          }
+        }
+        else if (componentType === 'cooling' || componentType === 'caseFan') {
+          // 散热器/风扇特有字段
+          const coolingParts = [
+            item['散热形式'] || item.type || '',
+            item['风扇尺寸'] || item.fan_size || '',
+            item['风扇数量'] || item.fan_count || '',
+            item['转速'] || item.fan_speed || '',
+            item['噪音'] || item.noise_level || '',
+            item['RGB'] || item.rgb || '',
+            item['散热片高度'] || item.height || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (coolingParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理散热器类型搜索
+          if (keywordPart.includes('风冷') || keywordPart.includes('水冷') || keywordPart.includes('机箱风扇')) {
+            const coolingType = (item['散热形式'] || item.type || '').toLowerCase();
+            if (coolingType.includes(keywordPart)) return true;
+            // 在名称中也检查
+            if (itemName.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理风扇尺寸搜索
+          if (/^\d+mm$/.test(keywordPart) || /^\d+厘米$/.test(keywordPart) || /^\d+cm$/.test(keywordPart)) {
+            const fanSize = (item['风扇尺寸'] || item.fan_size || '').toLowerCase();
+            if (fanSize.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理RGB搜索
+          if (keywordPart.includes('rgb') || keywordPart.includes('灯')) {
+            const rgb = (item['RGB'] || item.rgb || '').toLowerCase();
+            if (rgb.includes('rgb') || rgb.includes('灯')) return true;
+            // 在名称中也检查
+            if (itemName.includes('rgb') || itemName.includes('灯')) return true;
+          }
+        }
+        else if (componentType === 'monitor') {
+          // 显示器特有字段
+          const monitorParts = [
+            item['面板类型'] || item.panel_type || '',
+            item['分辨率'] || item.resolution || '',
+            item['刷新率'] || item.refresh_rate || '',
+            item['响应时间'] || item.response_time || '',
+            item['屏幕尺寸'] || item.size || '',
+            item['高动态范围'] || item.hdr || '',
+            item['接口'] || item.ports || ''
+          ].map(String).map(s => s.toLowerCase());
+          
+          // 任何一个字段匹配即可
+          if (monitorParts.some(part => part.includes(keywordPart))) return true;
+          
+          // 特别处理显示器尺寸搜索
+          if (/^\d+(\.\d+)?寸$/.test(keywordPart) || /^\d+(\.\d+)?英寸$/.test(keywordPart) || /^\d+(\.\d+)?inch$/.test(keywordPart)) {
+            const size = (item['屏幕尺寸'] || item.size || '').toLowerCase();
+            if (size.includes(keywordPart.replace(/inch/i, '英寸'))) return true;
+          }
+          
+          // 特别处理分辨率搜索
+          if (keywordPart.includes('1080p') || keywordPart.includes('2k') || keywordPart.includes('4k') || keywordPart.includes('1440p')) {
+            const resolution = (item['分辨率'] || item.resolution || '').toLowerCase();
+            if (resolution.includes(keywordPart)) return true;
+            // 特别处理分辨率别名
+            if (keywordPart === '1080p' && resolution.includes('1920x1080')) return true;
+            if (keywordPart === '2k' && (resolution.includes('2560x1440') || resolution.includes('1440p'))) return true;
+            if (keywordPart === '4k' && (resolution.includes('3840x2160') || resolution.includes('4k'))) return true;
+          }
+          
+          // 特别处理面板类型搜索
+          const panelTypes = ['ips', 'tn', 'va', 'oled', '曲面'];
+          if (panelTypes.includes(keywordPart) || keywordPart.includes('曲面')) {
+            const panelType = (item['面板类型'] || item.panel_type || '').toLowerCase();
+            if (panelType.includes(keywordPart)) return true;
+          }
+          
+          // 特别处理刷新率搜索
+          if (/^\d+hz$/.test(keywordPart)) {
+            const refreshRate = (item['刷新率'] || item.refresh_rate || '').toLowerCase();
+            if (refreshRate.includes(keywordPart)) return true;
+          }
+        }
+        
+        // 未找到匹配项
+        return false;
+      });
+    });
+    
+    debugLog(`[关键词筛选] 结果数量: ${result.length}`);
+    return result;
+  },
+
+  /**
+   * 应用兼容性筛选 - 前端
+   */
+  applyCompatibilityFilter: function(filteredComponents) {
+    debugLog('[兼容性过滤:前端] 开始执行前端兼容性筛选');
+    
+    // 显示加载提示
+    // wx.showLoading({ title: '正在筛选兼容组件...', mask: true });
+    
+    // 设置超时保护
+    const timeoutId = setTimeout(() => {
+      debugLog('[兼容性过滤:前端] 兼容性筛选超时');
+      wx.hideLoading();
+      wx.showToast({
+        title: '兼容性筛选超时',
+        icon: 'none',
+        duration: 2000
+      });
+      // 超时时回退到普通筛选
+      this.filterComponents(true);
+    }, 10000); // 10秒超时
+    
+    try {
+      // 获取当前组件类型
+      const componentType = this.data.currentComponent;
+      
+      // 获取当前组件类型的所有组件（考虑已经应用的品牌和价格筛选）
+      let components = filteredComponents || this.data.components[componentType] || [];
+      
+      // 如果没有传入已筛选的组件列表，则应用品牌和价格筛选
+      if (!filteredComponents) {
+        // 首先应用品牌和价格筛选（保持这部分逻辑不变）
+        if (this.data.currentBrand !== 'all') {
+          components = this.filterComponentsByBrand(components, this.data.currentBrand);
+        }
+        
+        if (this.data.currentPrice !== 'all') {
+          components = this.filterComponentsByPrice(components, this.data.currentPrice);
+        }
+        
+        // 应用散热类型筛选
+        if (this.data.currentComponent === 'cooling' && this.data.currentCoolingType !== 'all') {
+          components = this.filterComponentsByCoolingType(components, this.data.currentCoolingType);
+        }
+      }
+      
+      debugLog(`[兼容性过滤:前端] 应用品牌、价格和类型筛选后，剩余${components.length}个组件`);
+      
+      // 改用异步处理以防止UI卡死
+      // 将筛选操作放到下一个事件循环中
+      setTimeout(() => {
+        try {
+          // 清除超时计时器
+          clearTimeout(timeoutId);
+          
+          // 使用已选组件进行兼容性筛选
+          const selectedItems = this.data.selectedItems;
+          
+          // 性能优化：将处理的组件数量上限改为非常大的值
+          const MAX_COMPONENTS_TO_PROCESS = 10000;
+          if (components.length > MAX_COMPONENTS_TO_PROCESS) {
+            debugLog(`[兼容性过滤:前端] 组件数量(${components.length})超过限制，只处理前${MAX_COMPONENTS_TO_PROCESS}个`);
+            components = components.slice(0, MAX_COMPONENTS_TO_PROCESS);
+          }
+          
+          // 简化的兼容性检查，直接比较关键字段
+          const compatibleComponents = components.filter(component => {
+            // CPU与主板兼容性检查
+            if (componentType === 'motherboard' && selectedItems.cpu) {
+              // 同时检查socket和接口字段，确保不会漏掉有效值
+              const cpuSocket = selectedItems.cpu.接口 || selectedItems.cpu.socket || '';
+              const mbSocket = component.接口 || component.socket || '';
+              
+              // 规范化接口字符串（去除空格，转换为大写），确保格式一致
+              const normCpuSocket = cpuSocket.replace(/\s+/g, '').toUpperCase();
+              const normMbSocket = mbSocket.replace(/\s+/g, '').toUpperCase();
+              
+              debugLog(`[CPU-主板兼容性检查] CPU: ${selectedItems.cpu.名称 || selectedItems.cpu.name}, 接口: ${cpuSocket} [标准化:${normCpuSocket}], 主板: ${component.名称 || component.name}, 接口: ${mbSocket} [标准化:${normMbSocket}]`);
+              
+              if (normCpuSocket && normMbSocket && normCpuSocket !== normMbSocket) {
+                debugLog(`[CPU-主板兼容性检查] 不兼容: ${normCpuSocket} !== ${normMbSocket}`);
+                return false;
+              } else if (!normCpuSocket || !normMbSocket) {
+                debugLog(`[CPU-主板兼容性检查] 缺少必要信息，跳过兼容性检查: cpuSocket=${normCpuSocket}, mbSocket=${normMbSocket}`);
+              } else {
+                debugLog(`[CPU-主板兼容性检查] 兼容: ${normCpuSocket} === ${normMbSocket}`);
+              }
+            }
+            
+            // 反向检查：主板与CPU兼容性
+            if (componentType === 'cpu' && selectedItems.motherboard) {
+              // 同时检查socket和接口字段，确保不会漏掉有效值
+              const cpuSocket = component.接口 || component.socket || '';
+              const mbSocket = selectedItems.motherboard.接口 || selectedItems.motherboard.socket || '';
+              
+              // 规范化接口字符串（去除空格，转换为大写），确保格式一致
+              const normCpuSocket = cpuSocket.replace(/\s+/g, '').toUpperCase();
+              const normMbSocket = mbSocket.replace(/\s+/g, '').toUpperCase();
+              
+              debugLog(`[主板-CPU兼容性检查] CPU: ${component.名称 || component.name}, 接口: ${cpuSocket} [标准化:${normCpuSocket}], 主板: ${selectedItems.motherboard.名称 || selectedItems.motherboard.name}, 接口: ${mbSocket} [标准化:${normMbSocket}]`);
+              
+              if (normCpuSocket && normMbSocket && normCpuSocket !== normMbSocket) {
+                debugLog(`[主板-CPU兼容性检查] 不兼容: ${normCpuSocket} !== ${normMbSocket}`);
+                return false;
+              } else if (!normCpuSocket || !normMbSocket) {
+                debugLog(`[主板-CPU兼容性检查] 缺少必要信息，跳过兼容性检查: cpuSocket=${normCpuSocket}, mbSocket=${normMbSocket}`);
+              } else {
+                debugLog(`[主板-CPU兼容性检查] 兼容: ${normCpuSocket} === ${normMbSocket}`);
+              }
+            }
+            
+            // 内存与主板兼容性检查
+            if ((componentType === 'ram' || componentType === 'memory') && selectedItems.motherboard) {
+              // 直接获取内存接口类型
+              const ramType = component.接口类型 || '';
+              
+              // 从主板的内存插槽字段中提取内存类型部分
+              let mbMemoryType = '';
+              if (selectedItems.motherboard.内存插槽) {
+                // 使用更灵活的正则表达式匹配各种格式："4*D5", "4×D5", "4 x D5"等
+                const memSlotMatch = selectedItems.motherboard.内存插槽.match(/\d+\s*[\*×xX]\s*([DdRr]\d+)/);
+                if (memSlotMatch) {
+                  mbMemoryType = memSlotMatch[1].toUpperCase();
+                }
+              }
+              
+              // 输出详细调试信息
+              debugLog(`[内存兼容性检查-详细] 内存数据:`, {
+                名称: component.名称 || component.name,
+                接口类型: ramType,
+                完整对象: JSON.stringify(component).substring(0, 100) + '...'
+              });
+              
+              debugLog(`[内存兼容性检查-详细] 主板数据:`, {
+                名称: selectedItems.motherboard.名称 || selectedItems.motherboard.name,
+                内存插槽: selectedItems.motherboard.内存插槽,
+                提取类型: mbMemoryType,
+                完整对象: JSON.stringify(selectedItems.motherboard).substring(0, 100) + '...'
+              });
+              
+              // 如果没有提取到主板内存类型，尝试其他可能的字段
+              if (!mbMemoryType) {
+                debugLog(`[内存兼容性检查-警告] 无法从内存插槽"${selectedItems.motherboard.内存插槽}"提取内存类型，尝试其他可能的字段`);
+                
+                // 直接尝试memoryType字段（如果存在）
+                if (selectedItems.motherboard.memoryType) {
+                  mbMemoryType = selectedItems.motherboard.memoryType.toUpperCase();
+                  debugLog(`[内存兼容性检查] 使用memoryType字段: ${mbMemoryType}`);
+                }
+              }
+              
+              debugLog(`[内存兼容性检查] 最终比较: 内存接口类型(${ramType}) vs 主板内存类型(${mbMemoryType})`);
+              
+              // 只有当两者都有值且不相等时，才判定为不兼容
+              if (ramType && mbMemoryType && ramType !== mbMemoryType) {
+                debugLog(`[内存兼容性检查] 不兼容: ${ramType} !== ${mbMemoryType}`);
+                return false;
+              } else if (!ramType || !mbMemoryType) {
+                debugLog(`[内存兼容性检查-警告] 缺少必要信息，跳过兼容性检查: ramType=${ramType}, mbMemoryType=${mbMemoryType}`);
+              } else {
+                debugLog(`[内存兼容性检查] 兼容: ${ramType} === ${mbMemoryType}`);
+              }
+            }
+            
+            // 所有兼容性检查通过
+            return true;
+          });
+          
+          debugLog(`[兼容性过滤:前端] 兼容性筛选后，剩余${compatibleComponents.length}个组件`);
+          
+          // 确保已选择的当前类型组件（如果有）排在列表最前面
+          const currentType = this.data.currentComponent;
+          const selectedItem = this.data.selectedItems[currentType];
+          
+          if (selectedItem) {
+            debugLog(`[兼容性过滤:前端] 发现已选择的${currentType}组件，将其排在列表最前面`);
+            
+            // 从兼容性筛选结果中移除已选择的组件（如果存在于筛选结果中）
+            const selectedItemIndex = compatibleComponents.findIndex(item => item.id === selectedItem.id);
+            if (selectedItemIndex >= 0) {
+              const selectedItemInList = compatibleComponents.splice(selectedItemIndex, 1)[0];
+              
+              // 将已选择的组件添加到列表最前面
+              compatibleComponents.unshift(selectedItemInList);
+              
+              debugLog(`[兼容性过滤:前端] 已将选择的组件移到列表第一位`);
+            } else {
+              debugLog(`[兼容性过滤:前端] 已选择的组件不在兼容性筛选结果中`);
+            }
+          }
+          
+          // 更新显示的组件列表 - 同时更新allFilteredComponents
+          this.setData({
+            filteredComponents: compatibleComponents,
+            allFilteredComponents: compatibleComponents, // 添加这行，确保价格排序使用相同的数据
+            filteredComponentsCount: compatibleComponents.length,
+            hasMoreComponents: compatibleComponents.length > this.data.displayedCount
+          });
+          
+          wx.hideLoading();
+          
+          // 显示过滤结果
+          if (compatibleComponents.length === 0) {
+            wx.showToast({
+              title: '没有找到兼容组件',
+              icon: 'none',
+              duration: 2000
+            });
+          } else {
+            wx.showToast({
+              title: `找到${compatibleComponents.length}个兼容组件`,
+              icon: 'success',
+              duration: 1500
+            });
+          }
+        } catch (err) {
+          clearTimeout(timeoutId);
+          wx.hideLoading();
+          console.error('[兼容性过滤:前端] 前端兼容性筛选出错:', err);
+          console.error('[兼容性过滤:前端] 错误堆栈:', err.stack);
+          
+          wx.showToast({
+            title: '兼容性筛选出错',
+            icon: 'none',
+            duration: 2000
+          });
+          
+          // 出错时回退到普通筛选，传入true避免循环调用
+          this.filterComponents(true);
+        }
+      }, 0); // 放到下一个事件循环中执行
+    } catch (err) {
+      clearTimeout(timeoutId);
+      wx.hideLoading();
+      console.error('[兼容性过滤:前端] 前端兼容性筛选出错:', err);
+      console.error('[兼容性过滤:前端] 错误堆栈:', err.stack);
+      
+      wx.showToast({
+        title: '兼容性筛选出错',
+        icon: 'none',
+        duration: 2000
+      });
+      
+      // 出错时回退到普通筛选，传入true避免循环调用
+      this.filterComponents(true);
+    }
+  },
+
+  /**
+   * 映射组件类型名称
+   * @param {string} type 原始组件类型
+   * @return {string} 映射后的组件类型
+   */
+  mapComponentType: function(type) {
+    const mapping = {
+      'memory': 'ram',
+      'ram': 'ram',
+      'powerSupply': 'psu',
+      'psu': 'psu',
+      'ssd': 'storage',
+      'hdd': 'storage'
+    };
+    
+    return mapping[type] || type;
+  }
 }); 

@@ -40,101 +40,110 @@
   <view class="parts-list">
     <view class="section-title">配件清单</view>
     
-    <!-- CPU -->
-    <view class="component-item" wx:if="{{configData.components.cpu}}">
-      <view class="component-icon">
-        <text class="icon-text">📊</text>
-      </view>
-      <view class="component-details">
-        <view class="component-name">处理器 (CPU)</view>
-        <view class="component-spec">{{configData.components.cpu.name}}</view>
-      </view>
-      <view class="component-price">¥{{configData.components.cpu.price}}</view>
+    <!-- 懒加载状态提示 -->
+    <view class="components-loading" wx:if="{{loadingComponents}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载配件详情中...</text>
     </view>
     
-    <!-- 主板 -->
-    <view class="component-item" wx:if="{{configData.components.motherboard}}">
-      <view class="component-icon">
-        <text class="icon-text">💻</text>
+    <!-- 配件列表，仅在组件加载完成后显示 -->
+    <block wx:if="{{componentsLoaded}}">
+      <!-- CPU -->
+      <view class="component-item" wx:if="{{configData.components.cpu}}">
+        <view class="component-icon">
+          <text class="icon-text">📊</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">处理器 (CPU)</view>
+          <view class="component-spec">{{configData.components.cpu.name}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.cpu.price}}</view>
       </view>
-      <view class="component-details">
-        <view class="component-name">主板</view>
-        <view class="component-spec">{{configData.components.motherboard.name}}</view>
+      
+      <!-- 主板 -->
+      <view class="component-item" wx:if="{{configData.components.motherboard}}">
+        <view class="component-icon">
+          <text class="icon-text">💻</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">主板</view>
+          <view class="component-spec">{{configData.components.motherboard.name}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.motherboard.price}}</view>
       </view>
-      <view class="component-price">¥{{configData.components.motherboard.price}}</view>
-    </view>
-    
-    <!-- 内存 -->
-    <view class="component-item" wx:if="{{configData.components.ram}}">
-      <view class="component-icon">
-        <text class="icon-text">🔢</text>
+      
+      <!-- 内存 -->
+      <view class="component-item" wx:if="{{configData.components.ram}}">
+        <view class="component-icon">
+          <text class="icon-text">🔢</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">内存 (RAM)</view>
+          <view class="component-spec">{{configData.components.ram.name}} {{configData.components.ram.quantity > 1 ? ' × ' + configData.components.ram.quantity : ''}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.ram.price * (configData.components.ram.quantity || 1)}}</view>
       </view>
-      <view class="component-details">
-        <view class="component-name">内存 (RAM)</view>
-        <view class="component-spec">{{configData.components.ram.name}} {{configData.components.ram.quantity > 1 ? ' × ' + configData.components.ram.quantity : ''}}</view>
+      
+      <!-- 显卡 -->
+      <view class="component-item" wx:if="{{configData.components.gpu}}">
+        <view class="component-icon">
+          <text class="icon-text">🎮</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">显卡 (GPU)</view>
+          <view class="component-spec">{{configData.components.gpu.name}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.gpu.price}}</view>
       </view>
-      <view class="component-price">¥{{configData.components.ram.price * (configData.components.ram.quantity || 1)}}</view>
-    </view>
-    
-    <!-- 显卡 -->
-    <view class="component-item" wx:if="{{configData.components.gpu}}">
-      <view class="component-icon">
-        <text class="icon-text">🎮</text>
+      
+      <!-- 存储 -->
+      <view class="component-item" wx:if="{{configData.components.storage}}">
+        <view class="component-icon">
+          <text class="icon-text">💾</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">存储</view>
+          <view class="component-spec">{{configData.components.storage.name}} {{configData.components.storage.quantity > 1 ? ' × ' + configData.components.storage.quantity : ''}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.storage.price * (configData.components.storage.quantity || 1)}}</view>
       </view>
-      <view class="component-details">
-        <view class="component-name">显卡 (GPU)</view>
-        <view class="component-spec">{{configData.components.gpu.name}}</view>
+      
+      <!-- 散热器 -->
+      <view class="component-item" wx:if="{{configData.components.cooler}}">
+        <view class="component-icon">
+          <text class="icon-text">❄️</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">散热器</view>
+          <view class="component-spec">{{configData.components.cooler.name}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.cooler.price}}</view>
       </view>
-      <view class="component-price">¥{{configData.components.gpu.price}}</view>
-    </view>
-    
-    <!-- 存储 -->
-    <view class="component-item" wx:if="{{configData.components.storage}}">
-      <view class="component-icon">
-        <text class="icon-text">💾</text>
+      
+      <!-- 电源 -->
+      <view class="component-item" wx:if="{{configData.components.psu}}">
+        <view class="component-icon">
+          <text class="icon-text">⚡</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">电源</view>
+          <view class="component-spec">{{configData.components.psu.name}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.psu.price}}</view>
       </view>
-      <view class="component-details">
-        <view class="component-name">存储</view>
-        <view class="component-spec">{{configData.components.storage.name}} {{configData.components.storage.quantity > 1 ? ' × ' + configData.components.storage.quantity : ''}}</view>
+      
+      <!-- 机箱 -->
+      <view class="component-item" wx:if="{{configData.components.case}}">
+        <view class="component-icon">
+          <text class="icon-text">🖥️</text>
+        </view>
+        <view class="component-details">
+          <view class="component-name">机箱</view>
+          <view class="component-spec">{{configData.components.case.name}}</view>
+        </view>
+        <view class="component-price">¥{{configData.components.case.price}}</view>
       </view>
-      <view class="component-price">¥{{configData.components.storage.price * (configData.components.storage.quantity || 1)}}</view>
-    </view>
-    
-    <!-- 散热器 -->
-    <view class="component-item" wx:if="{{configData.components.cooler}}">
-      <view class="component-icon">
-        <text class="icon-text">❄️</text>
-      </view>
-      <view class="component-details">
-        <view class="component-name">散热器</view>
-        <view class="component-spec">{{configData.components.cooler.name}}</view>
-      </view>
-      <view class="component-price">¥{{configData.components.cooler.price}}</view>
-    </view>
-    
-    <!-- 电源 -->
-    <view class="component-item" wx:if="{{configData.components.psu}}">
-      <view class="component-icon">
-        <text class="icon-text">⚡</text>
-      </view>
-      <view class="component-details">
-        <view class="component-name">电源</view>
-        <view class="component-spec">{{configData.components.psu.name}}</view>
-      </view>
-      <view class="component-price">¥{{configData.components.psu.price}}</view>
-    </view>
-    
-    <!-- 机箱 -->
-    <view class="component-item" wx:if="{{configData.components.case}}">
-      <view class="component-icon">
-        <text class="icon-text">🖥️</text>
-      </view>
-      <view class="component-details">
-        <view class="component-name">机箱</view>
-        <view class="component-spec">{{configData.components.case.name}}</view>
-      </view>
-      <view class="component-price">¥{{configData.components.case.price}}</view>
-    </view>
+    </block>
   </view>
 
   <!-- 配置描述 -->

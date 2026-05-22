@@ -1,0 +1,243 @@
+<!--pages/recommendation/result.wxml-->
+<view class="result-container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{isLoading}}">
+    <view class="loading-icon"></view>
+    <view class="loading-text">正在生成新方案，请稍候...</view>
+  </view>
+
+  <!-- 结果内容 -->
+  <block wx:else>
+    <!-- 标题区域 -->
+    <view class="result-header">
+      <view class="result-title">配置生成方案</view>
+      <view class="result-subtitle">根据您的需求定制的最佳方案</view>
+    </view>
+    
+    <!-- 配置概览 -->
+    <view class="config-overview">
+      <!-- 总价 -->
+      <view class="config-price">
+        <text class="price-label">总价:</text>
+        <text class="price-value">¥{{recommendConfig.totalPrice}}</text>
+      </view>
+      
+      <!-- 性能评分 -->
+      <view class="config-score">
+        <view class="score-item">
+          <view class="score-label">性能评分</view>
+          <view class="score-value" style="color: #ff8c00">{{performanceScore}}</view>
+          <view class="score-bar">
+            <view class="score-fill" style="width: {{performanceScore}}%; background-color: #ff8c00"></view>
+          </view>
+        </view>
+        <view class="score-item">
+          <view class="score-label">性价比</view>
+          <view class="score-value" style="color: #56A9FA">{{valueScore}}</view>
+          <view class="score-bar">
+            <view class="score-fill" style="width: {{valueScore}}%; background-color: #56A9FA"></view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 推荐理由 -->
+      <view class="recommend-reason">
+        <view class="reason-title">推荐理由</view>
+        <view class="reason-content">
+          <text wx:if="{{userPreference.purpose === 'gaming'}}">该配置方案专为游戏体验优化，CPU和显卡组合可以流畅运行大多数主流游戏，在您的预算范围内提供最佳游戏性能。</text>
+          <text wx:elif="{{userPreference.purpose === 'work'}}">该配置方案为创作和工作需求设计，CPU多核心性能出色，足够的内存和高速存储让专业软件运行更加流畅。</text>
+          <text wx:elif="{{userPreference.purpose === 'office'}}">该配置方案为日常办公优化，提供稳定可靠的性能，同时保持良好的性价比，满足文档处理、网页浏览等日常需求。</text>
+          <text wx:else>该配置方案全面均衡，在您的预算范围内提供最佳的综合性能，适合多种使用场景。</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 组件列表 -->
+    <view class="components-list {{expandedInfo ? 'expanded' : ''}}">
+      <view class="components-header" bindtap="toggleExpandInfo">
+        <text>配置清单</text>
+        <text class="expand-icon">{{expandedInfo ? '∧' : '∨'}}</text>
+      </view>
+      
+      <view class="components-content">
+        <!-- CPU -->
+        <view class="component-item">
+          <view class="component-icon icon-cpu"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.cpu.name || recommendConfig.components.cpu['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.cpu.specsText}}">{{recommendConfig.components.cpu.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.cpu.brand || recommendConfig.components.cpu['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cpu['型号'] || recommendConfig.components.cpu.model}}">型号: {{recommendConfig.components.cpu['型号'] || recommendConfig.components.cpu.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cpu['接口']}}">接口: {{recommendConfig.components.cpu['接口']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cpu['核心数']}}">核心数: {{recommendConfig.components.cpu['核心数']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cpu['线程数']}}">线程数: {{recommendConfig.components.cpu['线程数']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cpu['基础频率']}}">基础频率: {{recommendConfig.components.cpu['基础频率']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cpu['功耗']}}">功耗: {{recommendConfig.components.cpu['功耗']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.cpu.price || recommendConfig.components.cpu['价格']}}</view>
+        </view>
+        
+        <!-- 主板 -->
+        <view class="component-item">
+          <view class="component-icon icon-motherboard"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.motherboard.name || recommendConfig.components.motherboard['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.motherboard.specsText}}">{{recommendConfig.components.motherboard.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.motherboard.brand || recommendConfig.components.motherboard['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.motherboard['型号'] || recommendConfig.components.motherboard.model}}">型号: {{recommendConfig.components.motherboard['型号'] || recommendConfig.components.motherboard.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.motherboard['接口']}}">接口: {{recommendConfig.components.motherboard['接口']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.motherboard['芯片组']}}">芯片组: {{recommendConfig.components.motherboard['芯片组']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.motherboard['内存类型']}}">内存类型: {{recommendConfig.components.motherboard['内存类型']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.motherboard['尺寸']}}">尺寸: {{recommendConfig.components.motherboard['尺寸']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.motherboard.price || recommendConfig.components.motherboard['价格']}}</view>
+        </view>
+        
+        <!-- GPU -->
+        <view class="component-item">
+          <view class="component-icon icon-gpu"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.gpu.name || recommendConfig.components.gpu['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.gpu.specsText}}">{{recommendConfig.components.gpu.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.gpu.brand || recommendConfig.components.gpu['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.gpu['型号'] || recommendConfig.components.gpu.model}}">型号: {{recommendConfig.components.gpu['型号'] || recommendConfig.components.gpu.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.gpu['系列']}}">系列: {{recommendConfig.components.gpu['系列']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.gpu['显存']}}">显存: {{recommendConfig.components.gpu['显存']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.gpu['位宽']}}">位宽: {{recommendConfig.components.gpu['位宽']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.gpu['核心频率']}}">核心频率: {{recommendConfig.components.gpu['核心频率']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.gpu['功耗']}}">功耗: {{recommendConfig.components.gpu['功耗']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.gpu.price || recommendConfig.components.gpu['价格']}}</view>
+        </view>
+        
+        <!-- 内存 -->
+        <view class="component-item">
+          <view class="component-icon icon-ram"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.ram.name || recommendConfig.components.ram['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.ram.specsText}}">{{recommendConfig.components.ram.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.ram.brand || recommendConfig.components.ram['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.ram['型号'] || recommendConfig.components.ram.model}}">型号: {{recommendConfig.components.ram['型号'] || recommendConfig.components.ram.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.ram['容量']}}">容量: {{recommendConfig.components.ram['容量']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.ram['频率']}}">频率: {{recommendConfig.components.ram['频率']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.ram['规格']}}">规格: {{recommendConfig.components.ram['规格']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.ram.price || recommendConfig.components.ram['价格']}}</view>
+        </view>
+        
+        <!-- 存储 -->
+        <view class="component-item">
+          <view class="component-icon icon-storage"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.storage.name || recommendConfig.components.storage['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.storage.specsText}}">{{recommendConfig.components.storage.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.storage.brand || recommendConfig.components.storage['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.storage['型号'] || recommendConfig.components.storage.model}}">型号: {{recommendConfig.components.storage['型号'] || recommendConfig.components.storage.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.storage['容量']}}">容量: {{recommendConfig.components.storage['容量']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.storage['类型']}}">类型: {{recommendConfig.components.storage['类型']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.storage['接口']}}">接口: {{recommendConfig.components.storage['接口']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.storage['读取速度']}}">读取速度: {{recommendConfig.components.storage['读取速度']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.storage['写入速度']}}">写入速度: {{recommendConfig.components.storage['写入速度']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.storage.price || recommendConfig.components.storage['价格']}}</view>
+        </view>
+        
+        <!-- 散热器 -->
+        <view class="component-item">
+          <view class="component-icon icon-cooler"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.cooling.name || recommendConfig.components.cooling['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.cooling.specsText}}">{{recommendConfig.components.cooling.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.cooling.brand || recommendConfig.components.cooling['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cooling['型号'] || recommendConfig.components.cooling.model}}">型号: {{recommendConfig.components.cooling['型号'] || recommendConfig.components.cooling.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cooling['散热方式']}}">散热方式: {{recommendConfig.components.cooling['散热方式']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cooling['风扇数量']}}">风扇数量: {{recommendConfig.components.cooling['风扇数量']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cooling['风扇尺寸']}}">风扇尺寸: {{recommendConfig.components.cooling['风扇尺寸']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.cooling['支持接口']}}">支持接口: {{recommendConfig.components.cooling['支持接口']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.cooling.price || recommendConfig.components.cooling['价格']}}</view>
+        </view>
+        
+        <!-- 电源 -->
+        <view class="component-item">
+          <view class="component-icon icon-psu"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.psu.name || recommendConfig.components.psu['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.psu.specsText}}">{{recommendConfig.components.psu.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.psu.brand || recommendConfig.components.psu['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.psu['型号'] || recommendConfig.components.psu.model}}">型号: {{recommendConfig.components.psu['型号'] || recommendConfig.components.psu.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.psu['功率']}}">功率: {{recommendConfig.components.psu['功率']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.psu['认证']}}">认证: {{recommendConfig.components.psu['认证']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.psu['模组类型']}}">模组类型: {{recommendConfig.components.psu['模组类型']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.psu['风扇尺寸']}}">风扇尺寸: {{recommendConfig.components.psu['风扇尺寸']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.psu.price || recommendConfig.components.psu['价格']}}</view>
+        </view>
+        
+        <!-- 机箱 -->
+        <view class="component-item">
+          <view class="component-icon icon-case"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.case.name || recommendConfig.components.case['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.case.specsText}}">{{recommendConfig.components.case.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.case.brand || recommendConfig.components.case['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.case['型号'] || recommendConfig.components.case.model}}">型号: {{recommendConfig.components.case['型号'] || recommendConfig.components.case.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.case['类型']}}">类型: {{recommendConfig.components.case['类型']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.case['风扇数量']}}">风扇数量: {{recommendConfig.components.case['风扇数量']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.case['尺寸']}}">尺寸: {{recommendConfig.components.case['尺寸']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.case['材质']}}">材质: {{recommendConfig.components.case['材质']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.case['扩展槽']}}">扩展槽: {{recommendConfig.components.case['扩展槽']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.case.price || recommendConfig.components.case['价格']}}</view>
+        </view>
+
+        <!-- 显示器 -->
+        <view class="component-item">
+          <view class="component-icon icon-monitor"></view>
+          <view class="component-info">
+            <view class="component-name">{{recommendConfig.components.monitor.name || recommendConfig.components.monitor['名称']}}</view>
+            <view class="component-specs-summary" wx:if="{{recommendConfig.components.monitor.specsText}}">{{recommendConfig.components.monitor.specsText}}</view>
+            <view class="component-specs-list">
+              <view class="spec-item">品牌: {{recommendConfig.components.monitor.brand || recommendConfig.components.monitor['品牌']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.monitor['型号'] || recommendConfig.components.monitor.model}}">型号: {{recommendConfig.components.monitor['型号'] || recommendConfig.components.monitor.model}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.monitor['尺寸']}}">尺寸: {{recommendConfig.components.monitor['尺寸']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.monitor['分辨率']}}">分辨率: {{recommendConfig.components.monitor['分辨率']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.monitor['刷新率']}}">刷新率: {{recommendConfig.components.monitor['刷新率']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.monitor['面板类型']}}">面板类型: {{recommendConfig.components.monitor['面板类型']}}</view>
+              <view class="spec-item" wx:if="{{recommendConfig.components.monitor['接口类型']}}">接口类型: {{recommendConfig.components.monitor['接口类型']}}</view>
+            </view>
+          </view>
+          <view class="component-price">¥{{recommendConfig.components.monitor.price || recommendConfig.components.monitor['价格']}}</view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button class="action-btn btn-secondary" bindtap="regenerateRecommendation">重新生成</button>
+      <button class="action-btn btn-primary" bindtap="startConfig">调整配置</button>
+      <button class="action-btn btn-outline" bindtap="saveConfig">保存方案</button>
+    </view>
+    
+    <!-- 底部建议 -->
+    <view class="recommendation-tips">
+      <text>您还可以在调整配置页面进一步微调组件，获得完全符合您需求的个性化方案</text>
+    </view>
+  </block>
+</view> 

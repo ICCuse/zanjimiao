@@ -3,16 +3,6 @@
   <!-- 头部导航 -->
   <view class="header">
     <view class="page-title">配置方案</view>
-    
-    <!-- 搜索框(暂不实现) -->
-    <!--
-    <view class="search-wrapper">
-      <view class="search-box">
-        <text class="search-icon">🔍</text>
-        <input class="search-input" placeholder="搜索配置方案" confirm-type="search" />
-      </view>
-    </view>
-    -->
   </view>
 
   <!-- 筛选和排序栏 -->
@@ -48,7 +38,8 @@
     class="plan-list-container" 
     enhanced="{{true}}" 
     show-scrollbar="{{false}}"
-    enable-flex="{{true}}">
+    enable-flex="{{true}}"
+    bindscrolltolower="loadMoreData">
     
     <!-- 加载中 -->
     <view class="loading-container" wx:if="{{loading}}">
@@ -103,6 +94,17 @@
           </view>
         </view>
       </block>
+      
+      <!-- 加载更多提示 -->
+      <view class="loading-more" wx:if="{{loadingMore}}">
+        <view class="loading-spinner"></view>
+        <text class="loading-more-text">加载更多...</text>
+      </view>
+      
+      <!-- 没有更多数据提示 -->
+      <view class="no-more-data" wx:if="{{!hasMoreData && planList.length > 0}}">
+        <text>没有更多数据了</text>
+      </view>
     </view>
     
     <!-- 创建按钮 -->
